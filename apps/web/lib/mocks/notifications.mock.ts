@@ -1,0 +1,1 @@
+export const MOCK_UNREAD_NOTIFICATIONS_COUNT = 3;

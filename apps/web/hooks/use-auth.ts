@@ -8,8 +8,9 @@ import { authUserAtom, type AuthenticatedUser } from "@/lib/atoms/auth.atom";
 import { MOCK_USERS, type MockUser } from "@/lib/mocks/users.mock";
 
 const AUTH_SIMULATION_DELAY_MS = 800;
-const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
+const INVALID_CREDENTIALS_MESSAGE = "Correo o contraseña inválidos.";
 const HOME_ROUTE = "/";
+const LOGIN_ROUTE = "/login";
 
 interface LoginCredentials {
   email: string;
@@ -18,6 +19,7 @@ interface LoginCredentials {
 
 interface UseAuthResult {
   login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
   isLoading: boolean;
   errorMessage: string | null;
 }
@@ -62,5 +64,10 @@ export function useAuth(): UseAuthResult {
     router.push(HOME_ROUTE);
   };
 
-  return { login, isLoading, errorMessage };
+  const logout = () => {
+    setAuthUser(null);
+    router.push(LOGIN_ROUTE);
+  };
+
+  return { login, logout, isLoading, errorMessage };
 }
