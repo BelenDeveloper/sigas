@@ -10,9 +10,9 @@ import { z } from "zod";
 
 import { useAuth } from "@/hooks/use-auth";
 
-const EMAIL_INVALID_MESSAGE = "Enter a valid email address.";
+const EMAIL_INVALID_MESSAGE = "Ingresa un correo electrónico válido.";
 const PASSWORD_MIN_LENGTH = 6;
-const PASSWORD_TOO_SHORT_MESSAGE = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+const PASSWORD_TOO_SHORT_MESSAGE = `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
 
 const loginFormSchema = z.object({
   email: z.string().email(EMAIL_INVALID_MESSAGE),
@@ -38,11 +38,11 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">Correo electrónico</Label>
         <Input
           id="email"
           type="email"
-          placeholder="you@sigas.bo"
+          placeholder="tu@sigas.bo"
           autoComplete="email"
           {...register("email")}
         />
@@ -52,7 +52,7 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">Contraseña</Label>
         <Input
           id="password"
           type="password"
@@ -72,7 +72,7 @@ export function LoginForm() {
         disabled={isLoading}
         className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
       >
-        {isLoading ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
+        {isLoading ? <Loader2 className="size-4 animate-spin" /> : "Iniciar sesión"}
       </Button>
     </form>
   );
