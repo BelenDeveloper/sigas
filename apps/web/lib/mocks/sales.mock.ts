@@ -1,3 +1,5 @@
+import type { PaymentMethod } from "@/lib/payment-method";
+
 export type SaleType = "quotation" | "order" | "sale" | "return";
 
 export const SALE_TYPE_LABELS: Record<SaleType, string> = {
@@ -5,16 +7,6 @@ export const SALE_TYPE_LABELS: Record<SaleType, string> = {
   order: "Pedido",
   sale: "Venta",
   return: "Devolución",
-};
-
-export type PaymentMethod = "cash" | "qr" | "bank_transfer" | "check" | "credit_card";
-
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  cash: "Efectivo",
-  qr: "QR",
-  bank_transfer: "Transferencia bancaria",
-  check: "Cheque",
-  credit_card: "Tarjeta de crédito",
 };
 
 export interface SaleItem {

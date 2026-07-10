@@ -25,8 +25,8 @@ import { useState } from "react";
 
 import { useSales, type SalePaymentInput } from "@/hooks/use-sales";
 import { formatCurrencyBOB } from "@/lib/format-currency";
+import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 import { getSalePaidBOB, getSalePendingBOB, getSaleTotalBOB } from "@/lib/sale-helpers";
-import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/mocks/sales.mock";
 
 import { SaleStatusBadge } from "./SaleStatusBadge";
 import { SalePdfButton } from "./SalePdfButton";

@@ -14,7 +14,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import type { SalePaymentInput } from "@/hooks/use-sales";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/mocks/sales.mock";
+import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = "cash";

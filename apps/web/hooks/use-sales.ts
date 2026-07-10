@@ -5,12 +5,12 @@ import { useMemo, useState } from "react";
 
 import { salesAtom } from "@/lib/atoms/sales.atom";
 import {
-  type PaymentMethod,
   type Sale,
   type SaleItem,
   type SalePayment,
   type SaleType,
 } from "@/lib/mocks/sales.mock";
+import type { PaymentMethod } from "@/lib/payment-method";
 
 export const ALL_SALE_TYPES_OPTION = "all";
 
