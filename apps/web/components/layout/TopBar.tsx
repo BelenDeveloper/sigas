@@ -25,14 +25,26 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+function getPageTitle(pathname: string): string {
+  const exactMatch = ALL_NAV_ITEMS.find((item) => item.href === pathname);
+  if (exactMatch) {
+    return exactMatch.label;
+  }
+
+  const nestedMatch = ALL_NAV_ITEMS.filter(
+    (item) => item.href !== "/" && pathname.startsWith(`${item.href}/`),
+  ).sort((first, second) => second.href.length - first.href.length)[0];
+
+  return nestedMatch?.label ?? DEFAULT_PAGE_TITLE;
+}
+
 export function TopBar() {
   const pathname = usePathname();
   const authUser = useAtomValue(authUserAtom);
   const { logout } = useAuth();
   const hasUnreadNotifications = MOCK_UNREAD_NOTIFICATIONS_COUNT > 0;
 
-  const pageTitle =
-    ALL_NAV_ITEMS.find((item) => item.href === pathname)?.label ?? DEFAULT_PAGE_TITLE;
+  const pageTitle = getPageTitle(pathname);
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-6">
