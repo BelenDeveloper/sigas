@@ -9,8 +9,8 @@ import {
   SidebarSeparator,
 } from "@repo/ui/components/ui/sidebar";
 
+import { useNotifications } from "@/hooks/use-notifications";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import { MOCK_UNREAD_NOTIFICATIONS_COUNT } from "@/lib/mocks/notifications.mock";
 import {
   NOTIFICATIONS_NAV_ITEM,
   PRIMARY_NAV_ITEMS,
@@ -25,6 +25,7 @@ const ADMIN_ROLE = "admin";
 export function Sidebar() {
   const authUser = useAtomValue(authUserAtom);
   const isAdmin = authUser?.role === ADMIN_ROLE;
+  const { unreadCount } = useNotifications();
 
   const visibleSettingsNavItems = SETTINGS_NAV_ITEMS.filter(
     (item) => !item.isAdminOnly || isAdmin,
@@ -46,10 +47,7 @@ export function Sidebar() {
 
         <SidebarGroup>
           <SidebarMenu>
-            <SidebarNavItem
-              item={NOTIFICATIONS_NAV_ITEM}
-              badgeCount={MOCK_UNREAD_NOTIFICATIONS_COUNT}
-            />
+            <SidebarNavItem item={NOTIFICATIONS_NAV_ITEM} badgeCount={unreadCount} />
           </SidebarMenu>
         </SidebarGroup>
 

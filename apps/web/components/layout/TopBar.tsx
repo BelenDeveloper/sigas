@@ -1,16 +1,15 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@repo/ui/components/ui/avatar";
-import { Badge } from "@repo/ui/components/ui/badge";
 import { Button } from "@repo/ui/components/ui/button";
 import { SidebarTrigger } from "@repo/ui/components/ui/sidebar";
 import { useAtomValue } from "jotai";
-import { Bell, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import { MOCK_UNREAD_NOTIFICATIONS_COUNT } from "@/lib/mocks/notifications.mock";
 import { ALL_NAV_ITEMS } from "@/lib/nav-items";
 
 const DEFAULT_PAGE_TITLE = "Inicio";
@@ -42,7 +41,6 @@ export function TopBar() {
   const pathname = usePathname();
   const authUser = useAtomValue(authUserAtom);
   const { logout } = useAuth();
-  const hasUnreadNotifications = MOCK_UNREAD_NOTIFICATIONS_COUNT > 0;
 
   const pageTitle = getPageTitle(pathname);
 
@@ -54,14 +52,7 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative">
-          <Bell className="size-5 text-muted-foreground" />
-          {hasUnreadNotifications ? (
-            <Badge className="absolute -top-2 -right-2 h-4 min-w-4 justify-center px-1 text-[10px]">
-              {MOCK_UNREAD_NOTIFICATIONS_COUNT}
-            </Badge>
-          ) : null}
-        </div>
+        <NotificationBell />
 
         {authUser ? (
           <div className="flex items-center gap-2">
