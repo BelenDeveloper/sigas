@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { CompanyInput } from "@/hooks/use-companies";
-import type { Company } from "@/lib/mocks/companies.mock";
+import type { Company } from "@/lib/company-types";
 
 const NAME_REQUIRED_MESSAGE = "El nombre de la empresa es obligatorio.";
 
@@ -33,7 +33,11 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>;
 const EMPTY_VALUES: CompanyFormValues = { name: "", description: "", isActive: true };
 
 function toFormValues(company: Company): CompanyFormValues {
-  return { name: company.name, description: company.description, isActive: company.isActive };
+  return {
+    name: company.name,
+    description: company.description ?? "",
+    isActive: company.isActive,
+  };
 }
 
 interface CompanyFormDialogProps {
@@ -102,14 +106,16 @@ export function CompanyFormDialog({
             <Textarea id="company-form-description" rows={3} {...register("description")} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Switch
-              id="company-form-is-active"
-              checked={isActive}
-              onCheckedChange={(checked) => setValue("isActive", checked)}
-            />
-            <Label htmlFor="company-form-is-active">Empresa activa</Label>
-          </div>
+          {isEditMode ? (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="company-form-is-active"
+                checked={isActive}
+                onCheckedChange={(checked) => setValue("isActive", checked)}
+              />
+              <Label htmlFor="company-form-is-active">Empresa activa</Label>
+            </div>
+          ) : null}
 
           <DialogFooter>
             <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">

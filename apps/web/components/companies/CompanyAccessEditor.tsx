@@ -21,18 +21,13 @@ import {
 import { useEffect, useState } from "react";
 
 import type { UserAccessInput } from "@/hooks/use-companies";
-import type { Company, CompanyAccess } from "@/lib/mocks/companies.mock";
+import type { Company, CompanyAccessEntry } from "@/lib/company-types";
+import { trpc } from "@/lib/trpc/client";
 import type { AdminUser } from "@/lib/user-permissions";
 
-function buildAccessDraft(
-  users: AdminUser[],
-  companyAccess: CompanyAccess[],
-  companyId: string,
-): UserAccessInput[] {
+function buildAccessDraft(users: AdminUser[], accessEntries: CompanyAccessEntry[]): UserAccessInput[] {
   return users.map((user) => {
-    const existingAccess = companyAccess.find(
-      (access) => access.companyId === companyId && access.userId === user.id,
-    );
+    const existingAccess = accessEntries.find((access) => access.userId === user.id);
 
     return {
       userId: user.id,
@@ -47,8 +42,7 @@ interface CompanyAccessEditorProps {
   onOpenChange: (open: boolean) => void;
   company: Company | null;
   users: AdminUser[];
-  companyAccess: CompanyAccess[];
-  onSave: (companyId: string, accessList: UserAccessInput[]) => void;
+  onSave: (companyId: string, accessList: UserAccessInput[]) => Promise<void>;
 }
 
 export function CompanyAccessEditor({
@@ -56,16 +50,20 @@ export function CompanyAccessEditor({
   onOpenChange,
   company,
   users,
-  companyAccess,
   onSave,
 }: CompanyAccessEditorProps) {
   const [accessDraft, setAccessDraft] = useState<UserAccessInput[]>([]);
 
+  const { data: accessEntries } = trpc.companies.getAccessList.useQuery(
+    { companyId: company?.id ?? "" },
+    { enabled: open && company !== null },
+  );
+
   useEffect(() => {
     if (open && company) {
-      setAccessDraft(buildAccessDraft(users, companyAccess, company.id));
+      setAccessDraft(buildAccessDraft(users, accessEntries ?? []));
     }
-  }, [open, company, users, companyAccess]);
+  }, [open, company, users, accessEntries]);
 
   if (!company) {
     return null;
@@ -87,8 +85,8 @@ export function CompanyAccessEditor({
     );
   };
 
-  const handleSave = () => {
-    onSave(company.id, accessDraft);
+  const handleSave = async () => {
+    await onSave(company.id, accessDraft);
     onOpenChange(false);
   };
 
@@ -135,7 +133,10 @@ export function CompanyAccessEditor({
         </Table>
 
         <DialogFooter>
-          <Button className="bg-brand text-brand-foreground hover:bg-brand/90" onClick={handleSave}>
+          <Button
+            className="bg-brand text-brand-foreground hover:bg-brand/90"
+            onClick={() => void handleSave()}
+          >
             Guardar
           </Button>
         </DialogFooter>

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useCompanies } from "@/hooks/use-companies";
 import { useUsers } from "@/hooks/use-users";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import type { Company } from "@/lib/mocks/companies.mock";
+import type { Company } from "@/lib/company-types";
 
 import { CompanyAccessEditor } from "./CompanyAccessEditor";
 import { CompanyCard } from "./CompanyCard";
@@ -21,8 +21,7 @@ export function CompaniesPage() {
   const authUser = useAtomValue(authUserAtom);
   const isAdmin = authUser?.role === ADMIN_ROLE;
 
-  const { companies, companyAccess, createCompany, updateCompany, getUserCountForCompany, updateCompanyAccess } =
-    useCompanies();
+  const { companies, createCompany, updateCompany, updateCompanyAccess } = useCompanies();
   const { users } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -63,7 +62,6 @@ export function CompaniesPage() {
           <CompanyCard
             key={company.id}
             company={company}
-            userCount={getUserCountForCompany(company.id)}
             onEdit={handleEditCompany}
             onManageAccess={handleManageAccess}
           />
@@ -83,7 +81,6 @@ export function CompaniesPage() {
         onOpenChange={setIsAccessEditorOpen}
         company={companyForAccess}
         users={users}
-        companyAccess={companyAccess}
         onSave={updateCompanyAccess}
       />
     </div>

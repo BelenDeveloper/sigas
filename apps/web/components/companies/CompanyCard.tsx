@@ -3,7 +3,8 @@ import { Button } from "@repo/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 import { Pencil, Users } from "lucide-react";
 
-import type { Company } from "@/lib/mocks/companies.mock";
+import type { Company } from "@/lib/company-types";
+import { trpc } from "@/lib/trpc/client";
 
 const ACTIVE_LABEL = "Activa";
 const INACTIVE_LABEL = "Inactiva";
@@ -11,12 +12,14 @@ const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
 
 interface CompanyCardProps {
   company: Company;
-  userCount: number;
   onEdit: (company: Company) => void;
   onManageAccess: (company: Company) => void;
 }
 
-export function CompanyCard({ company, userCount, onEdit, onManageAccess }: CompanyCardProps) {
+export function CompanyCard({ company, onEdit, onManageAccess }: CompanyCardProps) {
+  const { data: accessList } = trpc.companies.getAccessList.useQuery({ companyId: company.id });
+  const userCount = accessList?.filter((access) => access.canView).length ?? 0;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">

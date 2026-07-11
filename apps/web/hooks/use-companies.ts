@@ -1,13 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
-import {
-  MOCK_COMPANIES,
-  MOCK_COMPANY_ACCESS,
-  type Company,
-  type CompanyAccess,
-} from "@/lib/mocks/companies.mock";
+import type { Company } from "@/lib/company-types";
+import { trpc } from "@/lib/trpc/client";
 
 export interface CompanyInput {
   name: string;
@@ -23,47 +17,48 @@ export interface UserAccessInput {
 
 interface UseCompaniesResult {
   companies: Company[];
-  companyAccess: CompanyAccess[];
   createCompany: (input: CompanyInput) => void;
   updateCompany: (companyId: string, input: CompanyInput) => void;
-  getUserCountForCompany: (companyId: string) => number;
-  updateCompanyAccess: (companyId: string, accessList: UserAccessInput[]) => void;
+  updateCompanyAccess: (companyId: string, accessList: UserAccessInput[]) => Promise<void>;
 }
 
 export function useCompanies(): UseCompaniesResult {
-  const [companies, setCompanies] = useState<Company[]>(MOCK_COMPANIES);
-  const [companyAccess, setCompanyAccess] = useState<CompanyAccess[]>(MOCK_COMPANY_ACCESS);
+  const utils = trpc.useUtils();
+  const { data } = trpc.companies.list.useQuery();
+
+  const invalidateCompanies = () => void utils.companies.list.invalidate();
+
+  const createMutation = trpc.companies.create.useMutation({ onSuccess: invalidateCompanies });
+  const updateMutation = trpc.companies.update.useMutation({ onSuccess: invalidateCompanies });
+  const updateAccessMutation = trpc.companies.updateAccess.useMutation();
 
   const createCompany = (input: CompanyInput) => {
-    const newCompany: Company = { ...input, id: crypto.randomUUID() };
-
-    setCompanies((previous) => [...previous, newCompany]);
+    createMutation.mutate({ name: input.name, description: input.description });
   };
 
   const updateCompany = (companyId: string, input: CompanyInput) => {
-    setCompanies((previous) =>
-      previous.map((company) => (company.id === companyId ? { ...company, ...input } : company)),
+    updateMutation.mutate({
+      id: companyId,
+      name: input.name,
+      description: input.description,
+      isActive: input.isActive,
+    });
+  };
+
+  const updateCompanyAccess = async (companyId: string, accessList: UserAccessInput[]) => {
+    await Promise.all(
+      accessList.map((access) =>
+        updateAccessMutation.mutateAsync({
+          companyId,
+          userId: access.userId,
+          canView: access.canView,
+          canEdit: access.canEdit,
+        }),
+      ),
     );
+
+    await utils.companies.getAccessList.invalidate({ companyId });
   };
 
-  const getUserCountForCompany = (companyId: string) =>
-    companyAccess.filter((access) => access.companyId === companyId && access.canView).length;
-
-  const updateCompanyAccess = (companyId: string, accessList: UserAccessInput[]) => {
-    const updatedRows: CompanyAccess[] = accessList.map((access) => ({ companyId, ...access }));
-
-    setCompanyAccess((previous) => [
-      ...previous.filter((access) => access.companyId !== companyId),
-      ...updatedRows,
-    ]);
-  };
-
-  return {
-    companies,
-    companyAccess,
-    createCompany,
-    updateCompany,
-    getUserCountForCompany,
-    updateCompanyAccess,
-  };
+  return { companies: data ?? [], createCompany, updateCompany, updateCompanyAccess };
 }
