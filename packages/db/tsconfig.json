@@ -3,8 +3,8 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "."
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["client.ts", "index.ts", "schema/**/*.ts"],
+  "exclude": ["node_modules", "dist", "migrations", "drizzle.config.ts"]
 }

@@ -1,0 +1,16 @@
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
+export const USER_ROLES = ["admin", "logistics", "sales", "custom"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  role: text("role", { enum: USER_ROLES }).notNull().default("custom"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
