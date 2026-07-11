@@ -1,6 +1,12 @@
 export * from "./client.js";
 export * as schema from "./schema/index.js";
 export type {
+  Company,
+  CompanyUserAccess,
+  NewCompany,
+  NewCompanyUserAccess,
+} from "./schema/companies.js";
+export type {
   ModuleKey,
   NewUserModulePermission,
   UserModulePermission,

@@ -40,3 +40,13 @@ export function requirePermission(
     throw new TRPCError({ code: "FORBIDDEN", message: FORBIDDEN_MESSAGE });
   }
 }
+
+export function requireAdmin(ctx: TrpcContext): void {
+  if (!ctx.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  if (ctx.user.role !== ADMIN_ROLE) {
+    throw new TRPCError({ code: "FORBIDDEN", message: FORBIDDEN_MESSAGE });
+  }
+}

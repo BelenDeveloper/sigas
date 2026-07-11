@@ -15,6 +15,13 @@
       "when": 1783798122974,
       "tag": "0001_add_is_active_and_user_module_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783806974605,
+      "tag": "0002_add_companies",
+      "breakpoints": true
     }
   ]
 }
