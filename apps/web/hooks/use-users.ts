@@ -1,13 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
-import {
-  MOCK_ADMIN_USERS,
-  type AdminUser,
-  type AdminUserRole,
-  type ModulePermission,
-} from "@/lib/mocks/users-admin.mock";
+import { trpc } from "@/lib/trpc/client";
+import type { AdminUser, AdminUserRole, ModulePermission } from "@/lib/user-permissions";
 
 export interface UserProfileInput {
   name: string;
@@ -16,7 +10,7 @@ export interface UserProfileInput {
   role: AdminUserRole;
 }
 
-export type UserProfileUpdateInput = Omit<UserProfileInput, "password">;
+export type UserProfileUpdateInput = Omit<UserProfileInput, "password" | "email">;
 
 interface UseUsersResult {
   users: AdminUser[];
@@ -26,19 +20,20 @@ interface UseUsersResult {
 }
 
 export function useUsers(): UseUsersResult {
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_ADMIN_USERS);
+  const utils = trpc.useUtils();
+  const { data } = trpc.users.list.useQuery();
+
+  const invalidateUsers = () => void utils.users.list.invalidate();
+
+  const createMutation = trpc.users.create.useMutation({ onSuccess: invalidateUsers });
+  const updateMutation = trpc.users.update.useMutation({ onSuccess: invalidateUsers });
+  const updatePermissionsMutation = trpc.users.updatePermissions.useMutation({
+    onSuccess: invalidateUsers,
+  });
+  const toggleActiveMutation = trpc.users.toggleActive.useMutation({ onSuccess: invalidateUsers });
 
   const createUser = (profile: UserProfileInput, permissions: ModulePermission[]) => {
-    const newUser: AdminUser = {
-      id: crypto.randomUUID(),
-      name: profile.name,
-      email: profile.email,
-      role: profile.role,
-      isActive: true,
-      permissions,
-    };
-
-    setUsers((previous) => [...previous, newUser]);
+    createMutation.mutate({ ...profile, permissions });
   };
 
   const updateUser = (
@@ -46,16 +41,20 @@ export function useUsers(): UseUsersResult {
     profile: UserProfileUpdateInput,
     permissions: ModulePermission[],
   ) => {
-    setUsers((previous) =>
-      previous.map((user) => (user.id === userId ? { ...user, ...profile, permissions } : user)),
-    );
+    const currentUser = data?.find((user) => user.id === userId);
+
+    updateMutation.mutate({
+      id: userId,
+      name: profile.name,
+      role: profile.role,
+      isActive: currentUser?.isActive ?? true,
+    });
+    updatePermissionsMutation.mutate({ userId, permissions });
   };
 
   const toggleUserActive = (userId: string) => {
-    setUsers((previous) =>
-      previous.map((user) => (user.id === userId ? { ...user, isActive: !user.isActive } : user)),
-    );
+    toggleActiveMutation.mutate({ id: userId });
   };
 
-  return { users, createUser, updateUser, toggleUserActive };
+  return { users: data ?? [], createUser, updateUser, toggleUserActive };
 }

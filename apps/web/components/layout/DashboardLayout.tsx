@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useSidebar } from "@/hooks/use-sidebar";
-import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { authUserAtom, isAuthLoadingAtom } from "@/lib/atoms/auth.atom";
 
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
@@ -21,15 +21,16 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const authUser = useAtomValue(authUserAtom);
+  const isAuthLoading = useAtomValue(isAuthLoadingAtom);
   const { isCollapsed, setIsCollapsed } = useSidebar();
 
   useEffect(() => {
-    if (!authUser) {
+    if (!isAuthLoading && !authUser) {
       router.replace(LOGIN_ROUTE);
     }
-  }, [authUser, router]);
+  }, [isAuthLoading, authUser, router]);
 
-  if (!authUser) {
+  if (isAuthLoading || !authUser) {
     return null;
   }
 

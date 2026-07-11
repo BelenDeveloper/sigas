@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 
-import { MODULE_LABELS, type ModulePermission } from "@/lib/mocks/users-admin.mock";
+import { MODULE_LABELS, type ModulePermission } from "@/lib/user-permissions";
 import { buildAdminPreset, buildLogisticsPreset, buildSalesPreset } from "@/lib/permission-helpers";
 
 interface PermissionsEditorProps {

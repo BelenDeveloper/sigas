@@ -30,7 +30,7 @@ import {
   type AdminUser,
   type AdminUserRole,
   type ModulePermission,
-} from "@/lib/mocks/users-admin.mock";
+} from "@/lib/user-permissions";
 import { buildEmptyPermissions } from "@/lib/permission-helpers";
 
 import { PermissionsEditor } from "./PermissionsEditor";
@@ -110,7 +110,7 @@ export function UserFormDialog({ open, onOpenChange, user, onCreate, onUpdate }:
 
   const onSubmit = (values: ProfileFormValues) => {
     if (isEditMode && user) {
-      onUpdate(user.id, { name: values.name, email: values.email, role: values.role }, permissions);
+      onUpdate(user.id, { name: values.name, role: values.role }, permissions);
     } else {
       onCreate(values, permissions);
     }
@@ -141,7 +141,13 @@ export function UserFormDialog({ open, onOpenChange, user, onCreate, onUpdate }:
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="user-form-email">Correo electrónico</Label>
-                <Input id="user-form-email" type="email" {...register("email")} />
+                <Input
+                  id="user-form-email"
+                  type="email"
+                  readOnly={isEditMode}
+                  disabled={isEditMode}
+                  {...register("email")}
+                />
                 {errors.email ? <p className="text-sm text-destructive">{errors.email.message}</p> : null}
               </div>
 

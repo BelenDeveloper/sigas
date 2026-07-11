@@ -22,7 +22,7 @@ import { useEffect, useState } from "react";
 
 import type { UserAccessInput } from "@/hooks/use-companies";
 import type { Company, CompanyAccess } from "@/lib/mocks/companies.mock";
-import type { AdminUser } from "@/lib/mocks/users-admin.mock";
+import type { AdminUser } from "@/lib/user-permissions";
 
 function buildAccessDraft(
   users: AdminUser[],

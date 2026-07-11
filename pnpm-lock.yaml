@@ -90,6 +90,9 @@ importers:
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@supabase/supabase-js':
+        specifier: ^2.58.0
+        version: 2.110.2
       '@tailwindcss/postcss':
         specifier: ^4.3.2
         version: 4.3.2

@@ -1,5 +1,4 @@
 export type ModuleKey =
-  | "dashboard"
   | "inventory"
   | "clients"
   | "suppliers"
@@ -9,10 +8,10 @@ export type ModuleKey =
   | "projects"
   | "notifications"
   | "settings"
-  | "companies";
+  | "companies"
+  | "users";
 
 export const MODULE_KEYS: ModuleKey[] = [
-  "dashboard",
   "inventory",
   "clients",
   "suppliers",
@@ -23,10 +22,10 @@ export const MODULE_KEYS: ModuleKey[] = [
   "notifications",
   "settings",
   "companies",
+  "users",
 ];
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
-  dashboard: "Inicio",
   inventory: "Inventario",
   clients: "Clientes",
   suppliers: "Proveedores",
@@ -37,6 +36,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   notifications: "Notificaciones",
   settings: "Configuración",
   companies: "Empresas",
+  users: "Usuarios",
 };
 
 export interface ModulePermission {
@@ -65,50 +65,3 @@ export interface AdminUser {
   isActive: boolean;
   permissions: ModulePermission[];
 }
-
-function buildPermissions(
-  fullAccessModules: ModuleKey[] = [],
-  viewOnlyModules: ModuleKey[] = [],
-): ModulePermission[] {
-  return MODULE_KEYS.map((module) => ({
-    module,
-    canView: fullAccessModules.includes(module) || viewOnlyModules.includes(module),
-    canCreate: fullAccessModules.includes(module),
-    canEdit: fullAccessModules.includes(module),
-  }));
-}
-
-export const MOCK_ADMIN_USERS: AdminUser[] = [
-  {
-    id: "1",
-    name: "Cristian Zaballa",
-    email: "cristian@sigas.bo",
-    role: "admin",
-    isActive: true,
-    permissions: buildPermissions(MODULE_KEYS),
-  },
-  {
-    id: "2",
-    name: "Harold",
-    email: "harold@sigas.bo",
-    role: "logistics",
-    isActive: true,
-    permissions: buildPermissions(["projects"]),
-  },
-  {
-    id: "3",
-    name: "Mirael",
-    email: "mirael@sigas.bo",
-    role: "sales",
-    isActive: true,
-    permissions: buildPermissions([], ["sales", "clients", "inventory"]),
-  },
-  {
-    id: "4",
-    name: "Natalia",
-    email: "natalia@sigas.bo",
-    role: "custom",
-    isActive: false,
-    permissions: buildPermissions([], ["dashboard", "clients"]),
-  },
-];

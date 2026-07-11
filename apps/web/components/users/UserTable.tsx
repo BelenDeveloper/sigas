@@ -10,7 +10,7 @@ import {
 } from "@repo/ui/components/ui/table";
 import { Pencil, Power } from "lucide-react";
 
-import { ADMIN_USER_ROLE_LABELS, type AdminUser } from "@/lib/mocks/users-admin.mock";
+import { ADMIN_USER_ROLE_LABELS, type AdminUser } from "@/lib/user-permissions";
 import { formatModuleAccessSummary } from "@/lib/permission-helpers";
 
 const NO_USERS_MESSAGE = "No se encontraron usuarios.";

@@ -63,7 +63,7 @@ export function TopBar() {
           </div>
         ) : null}
 
-        <Button variant="ghost" size="icon" onClick={logout} aria-label="Cerrar sesión">
+        <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label="Cerrar sesión">
           <LogOut className="size-4" />
         </Button>
       </div>

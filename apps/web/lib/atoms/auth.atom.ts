@@ -1,9 +1,10 @@
 import { atom } from "jotai";
 
-import type { MockUser } from "@/lib/mocks/users.mock";
+import type { AdminUser } from "@/lib/user-permissions";
 
-export type AuthenticatedUser = Omit<MockUser, "password">;
+export type AuthenticatedUser = AdminUser;
 
 export const authUserAtom = atom<AuthenticatedUser | null>(null);
+export const isAuthLoadingAtom = atom<boolean>(true);
 
 export const isAuthenticatedAtom = atom((get) => get(authUserAtom) !== null);

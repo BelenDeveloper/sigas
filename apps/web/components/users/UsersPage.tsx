@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { useUsers } from "@/hooks/use-users";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import type { AdminUser } from "@/lib/mocks/users-admin.mock";
+import type { AdminUser } from "@/lib/user-permissions";
 
 import { UserFormDialog } from "./UserFormDialog";
 import { UserTable } from "./UserTable";

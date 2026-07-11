@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
+import { AuthStateListener } from "../components/auth/AuthStateListener";
 import { TrpcProvider } from "../lib/trpc/provider";
 import { cn } from "@repo/ui/lib/utils";
 
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="es" className={cn("font-sans", geistSans.variable, geistMono.variable)}>
       <body>
-        <TrpcProvider>{children}</TrpcProvider>
+        <TrpcProvider>
+          <AuthStateListener>{children}</AuthStateListener>
+        </TrpcProvider>
       </body>
     </html>
   );
