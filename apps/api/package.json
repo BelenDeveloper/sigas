@@ -5,7 +5,7 @@
   "private": true,
   "exports": {
     ".": {
-      "types": "./dist/trpc/routers/index.d.ts",
+      "types": "./dist/trpc/trpc.router.d.ts",
       "default": "./dist/main.js"
     }
   },

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { db, schema, type User } from "@repo/db";
+import { db, schema, type ModuleKey, type User, type UserRole } from "@repo/db";
 import { eq, sql } from "drizzle-orm";
 
 import { SupabaseAdminService } from "../supabase/supabase.service.js";
@@ -15,6 +15,18 @@ import type {
   UpdateUserInput,
   UserWithPermissions,
 } from "./users.types.js";
+
+interface UserPermissionRow {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  module: ModuleKey | null;
+  canView: boolean | null;
+  canCreate: boolean | null;
+  canEdit: boolean | null;
+}
 
 @Injectable()
 export class UsersService {
@@ -39,8 +51,26 @@ export class UsersService {
     };
   }
 
-  async findAll(): Promise<User[]> {
-    return db.select().from(schema.users);
+  async findAll(): Promise<UserWithPermissions[]> {
+    const rows = await db
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        email: schema.users.email,
+        role: schema.users.role,
+        isActive: schema.users.isActive,
+        module: schema.userModulePermissions.module,
+        canView: schema.userModulePermissions.canView,
+        canCreate: schema.userModulePermissions.canCreate,
+        canEdit: schema.userModulePermissions.canEdit,
+      })
+      .from(schema.users)
+      .leftJoin(
+        schema.userModulePermissions,
+        eq(schema.userModulePermissions.userId, schema.users.id),
+      );
+
+    return this.groupRowsByUser(rows);
   }
 
   async create(input: CreateUserInput): Promise<User> {
@@ -142,6 +172,37 @@ export class UsersService {
         permissions: buildNoPermissions(),
       },
     ];
+  }
+
+  private groupRowsByUser(rows: UserPermissionRow[]): UserWithPermissions[] {
+    const userMap = new Map<string, UserWithPermissions>();
+
+    for (const row of rows) {
+      let user = userMap.get(row.id);
+
+      if (!user) {
+        user = {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          role: row.role,
+          isActive: row.isActive,
+          permissions: [],
+        };
+        userMap.set(row.id, user);
+      }
+
+      if (row.module && row.canView !== null && row.canCreate !== null && row.canEdit !== null) {
+        user.permissions.push({
+          module: row.module,
+          canView: row.canView,
+          canCreate: row.canCreate,
+          canEdit: row.canEdit,
+        });
+      }
+    }
+
+    return Array.from(userMap.values());
   }
 
   private async findPermissions(userId: string): Promise<ModulePermission[]> {
