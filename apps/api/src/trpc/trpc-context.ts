@@ -3,12 +3,12 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import { UsersService } from "../users/users.service.js";
-import type { AuthUser } from "../users/users.types.js";
+import type { UserWithPermissions } from "../users/users.types.js";
 
 const BEARER_PREFIX = "Bearer ";
 
 export interface TrpcContext {
-  user: AuthUser | null;
+  user: UserWithPermissions | null;
 }
 
 const supabaseUrl = process.env.SUPABASE_URL;
