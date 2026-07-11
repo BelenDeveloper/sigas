@@ -9,7 +9,8 @@
     "check-types": "turbo run check-types",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "db:studio": "pnpm --filter @repo/db run db:studio"
+    "db:studio": "pnpm --filter @repo/db run db:studio",
+    "db:seed": "pnpm --filter @repo/db run db:seed"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

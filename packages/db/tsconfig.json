@@ -5,6 +5,6 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["client.ts", "index.ts", "schema/**/*.ts"],
+  "include": ["client.ts", "index.ts", "seed.ts", "schema/**/*.ts"],
   "exclude": ["node_modules", "dist", "migrations", "drizzle.config.ts"]
 }
