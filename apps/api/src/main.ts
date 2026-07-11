@@ -6,7 +6,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module.js";
 import { TrpcModule } from "./trpc/trpc.module.js";
 
-const DEFAULT_PORT = 3333;
+const DEFAULT_PORT = 4000;
 const DEFAULT_CORS_ORIGIN = "http://localhost:3000";
 
 async function bootstrap() {

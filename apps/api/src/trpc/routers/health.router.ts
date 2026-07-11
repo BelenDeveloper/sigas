@@ -1,9 +1,10 @@
 import { HealthService } from "../../health/health.service.js";
-import { publicProcedure, router } from "../trpc.js";
+import { procedure, router } from "../trpc.service.js";
+
+const healthService = new HealthService();
 
 export const healthRouter = router({
-  check: publicProcedure.query(async ({ ctx }) => {
-    const healthService = ctx.app.get(HealthService);
+  check: procedure.query(async () => {
     const isDatabaseConnected = await healthService.checkDatabaseConnection();
     return { status: "ok" as const, database: isDatabaseConnected ? "connected" : "disconnected" };
   }),

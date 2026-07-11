@@ -3,11 +3,12 @@ import { Module } from "@nestjs/common";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 import { HealthModule } from "../health/health.module.js";
-import { createContextFactory } from "./context.js";
-import { appRouter } from "./routers/index.js";
+import { UsersModule } from "../users/users.module.js";
+import { createTrpcContextFactory } from "./trpc-context.js";
+import { appRouter } from "./trpc.router.js";
 
 @Module({
-  imports: [HealthModule],
+  imports: [HealthModule, UsersModule],
 })
 export class TrpcModule {
   static applyMiddleware(app: INestApplication): void {
@@ -15,7 +16,7 @@ export class TrpcModule {
       "/trpc",
       createExpressMiddleware({
         router: appRouter,
-        createContext: createContextFactory(app),
+        createContext: createTrpcContextFactory(app),
       }),
     );
   }
