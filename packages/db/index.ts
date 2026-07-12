@@ -26,6 +26,7 @@ export {
   STOCK_MOVEMENT_REFERENCE_TYPES,
   STOCK_MOVEMENT_TYPES,
 } from "./schema/inventory.js";
+export type { NewSupplier, Supplier } from "./schema/suppliers.js";
 export type {
   ModuleKey,
   NewUserModulePermission,
