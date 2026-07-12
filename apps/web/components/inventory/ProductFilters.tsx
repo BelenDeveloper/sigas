@@ -16,7 +16,7 @@ import {
   ALL_SUBCATEGORIES_OPTION_ID,
   type ProductFilterState,
 } from "@/hooks/use-inventory";
-import type { Category, Subcategory } from "@/lib/mocks/inventory.mock";
+import type { ProductCategory, ProductSubcategory } from "@/lib/inventory-types";
 
 const ALL_CATEGORIES_LABEL = "Todas las categorías";
 const ALL_SUBCATEGORIES_LABEL = "Todas las subcategorías";
@@ -32,8 +32,8 @@ function findLabel(id: string, allLabel: string, items: { id: string; name: stri
 interface ProductFiltersProps {
   filters: ProductFilterState;
   onFiltersChange: (filters: Partial<ProductFilterState>) => void;
-  categories: Category[];
-  subcategories: Subcategory[];
+  categories: ProductCategory[];
+  subcategories: ProductSubcategory[];
 }
 
 export function ProductFilters({

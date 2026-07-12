@@ -13,10 +13,10 @@ import { PackagePlus, Pencil } from "lucide-react";
 import { formatCurrencyBOB } from "@/lib/format-currency";
 import {
   PRODUCT_UNIT_LABELS,
-  type Category,
   type Product,
-  type Subcategory,
-} from "@/lib/mocks/inventory.mock";
+  type ProductCategory,
+  type ProductSubcategory,
+} from "@/lib/inventory-types";
 
 import { LowStockBadge } from "./LowStockBadge";
 
@@ -26,8 +26,8 @@ const NO_PRODUCTS_MESSAGE = "No se encontraron productos con estos filtros.";
 
 interface ProductTableProps {
   products: Product[];
-  categories: Category[];
-  subcategories: Subcategory[];
+  categories: ProductCategory[];
+  subcategories: ProductSubcategory[];
   onEdit: (product: Product) => void;
   onAdjustStock: (product: Product) => void;
 }
@@ -39,11 +39,11 @@ export function ProductTable({
   onEdit,
   onAdjustStock,
 }: ProductTableProps) {
-  const getCategoryName = (categoryId: string) =>
-    categories.find((category) => category.id === categoryId)?.name ?? categoryId;
+  const getCategoryName = (categoryId: string | null) =>
+    categories.find((category) => category.id === categoryId)?.name ?? "";
 
-  const getSubcategoryName = (subcategoryId: string) =>
-    subcategories.find((subcategory) => subcategory.id === subcategoryId)?.name ?? subcategoryId;
+  const getSubcategoryName = (subcategoryId: string | null) =>
+    subcategories.find((subcategory) => subcategory.id === subcategoryId)?.name ?? "";
 
   return (
     <Table>
@@ -91,7 +91,7 @@ export function ProductTable({
                   </div>
                 </TableCell>
                 <TableCell>{product.minimumStock}</TableCell>
-                <TableCell>{formatCurrencyBOB(product.salePriceBOB)}</TableCell>
+                <TableCell>{formatCurrencyBOB(product.salePrice)}</TableCell>
                 <TableCell>
                   <Badge variant={product.isActive ? "secondary" : "outline"}>
                     {product.isActive ? ACTIVE_LABEL : INACTIVE_LABEL}

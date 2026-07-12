@@ -26,32 +26,30 @@ import { z } from "zod";
 import type { ProductInput } from "@/hooks/use-inventory";
 import {
   PRODUCT_UNIT_LABELS,
-  type Category,
+  PRODUCT_UNITS,
   type Product,
+  type ProductCategory,
+  type ProductSubcategory,
   type ProductUnit,
-  type Subcategory,
-} from "@/lib/mocks/inventory.mock";
+} from "@/lib/inventory-types";
 
 const REQUIRED_MESSAGE = "Este campo es obligatorio.";
 const NON_NEGATIVE_MESSAGE = "Debe ser un número positivo.";
 const MAX_STOCK_MESSAGE = "El stock máximo debe ser mayor o igual al mínimo.";
 
-const PRODUCT_UNITS: ProductUnit[] = ["unit", "meter", "kg", "liter", "set"];
-
 const productFormSchema = z
   .object({
-    sku: z.string().min(1, REQUIRED_MESSAGE),
     name: z.string().min(1, REQUIRED_MESSAGE),
     categoryId: z.string().min(1, REQUIRED_MESSAGE),
     subcategoryId: z.string().min(1, REQUIRED_MESSAGE),
     unit: z.enum(["unit", "meter", "kg", "liter", "set"]),
-    costPriceBOB: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
-    salePriceBOB: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
+    costPrice: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
+    salePrice: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
     minimumStock: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
     maximumStock: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
     location: z.string().min(1, REQUIRED_MESSAGE),
-    netWeightKg: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
-    grossWeightKg: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
+    netWeight: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
+    grossWeight: z.coerce.number().nonnegative(NON_NEGATIVE_MESSAGE),
     description: z.string(),
   })
   .refine((values) => values.maximumStock >= values.minimumStock, {
@@ -63,35 +61,33 @@ type ProductFormInput = z.input<typeof productFormSchema>;
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 const EMPTY_VALUES: ProductFormInput = {
-  sku: "",
   name: "",
   categoryId: "",
   subcategoryId: "",
   unit: "unit",
-  costPriceBOB: 0,
-  salePriceBOB: 0,
+  costPrice: 0,
+  salePrice: 0,
   minimumStock: 0,
   maximumStock: 0,
   location: "",
-  netWeightKg: 0,
-  grossWeightKg: 0,
+  netWeight: 0,
+  grossWeight: 0,
   description: "",
 };
 
 function toFormValues(product: Product): ProductFormInput {
   return {
-    sku: product.sku,
     name: product.name,
-    categoryId: product.categoryId,
-    subcategoryId: product.subcategoryId,
+    categoryId: product.categoryId ?? "",
+    subcategoryId: product.subcategoryId ?? "",
     unit: product.unit,
-    costPriceBOB: product.costPriceBOB,
-    salePriceBOB: product.salePriceBOB,
+    costPrice: product.costPrice,
+    salePrice: product.salePrice,
     minimumStock: product.minimumStock,
-    maximumStock: product.maximumStock,
+    maximumStock: product.maximumStock ?? 0,
     location: product.location,
-    netWeightKg: product.netWeightKg,
-    grossWeightKg: product.grossWeightKg,
+    netWeight: product.netWeight ?? 0,
+    grossWeight: product.grossWeight ?? 0,
     description: product.description,
   };
 }
@@ -100,9 +96,8 @@ interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product | null;
-  categories: Category[];
-  subcategories: Subcategory[];
-  suggestSku: (categoryId: string, subcategoryId: string) => string;
+  categories: ProductCategory[];
+  subcategories: ProductSubcategory[];
   onCreate: (input: ProductInput) => void;
   onUpdate: (productId: string, input: ProductInput) => void;
 }
@@ -113,7 +108,6 @@ export function ProductFormDialog({
   product,
   categories,
   subcategories,
-  suggestSku,
   onCreate,
   onUpdate,
 }: ProductFormDialogProps) {
@@ -140,13 +134,6 @@ export function ProductFormDialog({
     }
   }, [open, product, reset]);
 
-  useEffect(() => {
-    if (!isEditMode && categoryId && subcategoryId) {
-      setValue("sku", suggestSku(categoryId, subcategoryId));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryId, subcategoryId, isEditMode]);
-
   const visibleSubcategories = subcategories.filter(
     (subcategory) => subcategory.categoryId === categoryId,
   );
@@ -170,11 +157,12 @@ export function ProductFormDialog({
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="product-sku">SKU</Label>
-              <Input id="product-sku" {...register("sku")} />
-              {errors.sku ? <p className="text-sm text-destructive">{errors.sku.message}</p> : null}
-            </div>
+            {isEditMode && product ? (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="product-sku">SKU</Label>
+                <Input id="product-sku" value={product.sku} readOnly disabled />
+              </div>
+            ) : null}
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="product-name">Nombre</Label>
@@ -268,17 +256,17 @@ export function ProductFormDialog({
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="product-cost-price">Precio de costo (Bs.)</Label>
-              <Input id="product-cost-price" type="number" step="0.01" {...register("costPriceBOB")} />
-              {errors.costPriceBOB ? (
-                <p className="text-sm text-destructive">{errors.costPriceBOB.message}</p>
+              <Input id="product-cost-price" type="number" step="0.01" {...register("costPrice")} />
+              {errors.costPrice ? (
+                <p className="text-sm text-destructive">{errors.costPrice.message}</p>
               ) : null}
             </div>
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="product-sale-price">Precio de venta (Bs.)</Label>
-              <Input id="product-sale-price" type="number" step="0.01" {...register("salePriceBOB")} />
-              {errors.salePriceBOB ? (
-                <p className="text-sm text-destructive">{errors.salePriceBOB.message}</p>
+              <Input id="product-sale-price" type="number" step="0.01" {...register("salePrice")} />
+              {errors.salePrice ? (
+                <p className="text-sm text-destructive">{errors.salePrice.message}</p>
               ) : null}
             </div>
 
@@ -300,9 +288,9 @@ export function ProductFormDialog({
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="product-net-weight">Peso neto (kg)</Label>
-              <Input id="product-net-weight" type="number" step="0.01" {...register("netWeightKg")} />
-              {errors.netWeightKg ? (
-                <p className="text-sm text-destructive">{errors.netWeightKg.message}</p>
+              <Input id="product-net-weight" type="number" step="0.01" {...register("netWeight")} />
+              {errors.netWeight ? (
+                <p className="text-sm text-destructive">{errors.netWeight.message}</p>
               ) : null}
             </div>
 
@@ -312,10 +300,10 @@ export function ProductFormDialog({
                 id="product-gross-weight"
                 type="number"
                 step="0.01"
-                {...register("grossWeightKg")}
+                {...register("grossWeight")}
               />
-              {errors.grossWeightKg ? (
-                <p className="text-sm text-destructive">{errors.grossWeightKg.message}</p>
+              {errors.grossWeight ? (
+                <p className="text-sm text-destructive">{errors.grossWeight.message}</p>
               ) : null}
             </div>
           </div>

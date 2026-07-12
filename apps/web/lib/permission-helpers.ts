@@ -1,8 +1,29 @@
-import { MODULE_KEYS, MODULE_LABELS, type ModuleKey, type ModulePermission } from "@/lib/user-permissions";
+import type { AdminUser, ModuleKey, ModulePermission } from "@/lib/user-permissions";
+import { MODULE_KEYS, MODULE_LABELS } from "@/lib/user-permissions";
 
 const ALL_MODULES_ACCESS_LABEL = "Todos los módulos";
 const NO_MODULES_ACCESS_LABEL = "Ninguno";
 const MAX_VISIBLE_MODULE_LABELS = 3;
+const ADMIN_ROLE = "admin";
+
+type PermissionAction = "canView" | "canCreate" | "canEdit";
+
+export function hasModulePermission(
+  user: Pick<AdminUser, "role" | "permissions"> | null,
+  module: ModuleKey,
+  action: PermissionAction,
+): boolean {
+  if (!user) {
+    return false;
+  }
+
+  if (user.role === ADMIN_ROLE) {
+    return true;
+  }
+
+  const permission = user.permissions.find((candidate) => candidate.module === module);
+  return permission?.[action] ?? false;
+}
 
 interface PermissionPresetConfig {
   canViewModules?: ModuleKey[];

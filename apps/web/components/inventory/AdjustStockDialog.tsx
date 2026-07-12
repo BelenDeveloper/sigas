@@ -16,7 +16,7 @@ import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
-import type { Product } from "@/lib/mocks/inventory.mock";
+import type { Product } from "@/lib/inventory-types";
 
 const QUANTITY_ZERO_MESSAGE = "La cantidad no puede ser cero.";
 const REASON_REQUIRED_MESSAGE = "El motivo es obligatorio.";

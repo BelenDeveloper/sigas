@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 
-import type { Product, StockMovement, StockMovementType } from "@/lib/mocks/inventory.mock";
+import type { StockMovement, StockMovementType } from "@/lib/inventory-types";
 
 const NO_MOVEMENTS_MESSAGE = "No se encontraron movimientos con estos filtros.";
 
@@ -36,13 +36,9 @@ function formatMovementDate(isoDate: string): string {
 
 interface StockMovementTableProps {
   movements: StockMovement[];
-  products: Product[];
 }
 
-export function StockMovementTable({ movements, products }: StockMovementTableProps) {
-  const getProductName = (productId: string) =>
-    products.find((product) => product.id === productId)?.name ?? productId;
-
+export function StockMovementTable({ movements }: StockMovementTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -67,10 +63,8 @@ export function StockMovementTable({ movements, products }: StockMovementTablePr
         ) : (
           movements.map((movement) => (
             <TableRow key={movement.id}>
-              <TableCell>{formatMovementDate(movement.date)}</TableCell>
-              <TableCell className="font-medium text-foreground">
-                {getProductName(movement.productId)}
-              </TableCell>
+              <TableCell>{formatMovementDate(movement.createdAt)}</TableCell>
+              <TableCell className="font-medium text-foreground">{movement.productName}</TableCell>
               <TableCell>
                 <Badge className={MOVEMENT_TYPE_BADGE_CLASSES[movement.type]}>
                   {MOVEMENT_TYPE_LABELS[movement.type]}
@@ -78,9 +72,9 @@ export function StockMovementTable({ movements, products }: StockMovementTablePr
               </TableCell>
               <TableCell>{movement.quantity}</TableCell>
               <TableCell>{movement.stockBefore}</TableCell>
-              <TableCell>{movement.stockAfter}</TableCell>
+              <TableCell>{movement.newStock}</TableCell>
               <TableCell className="text-muted-foreground">{movement.reason}</TableCell>
-              <TableCell>{movement.createdBy}</TableCell>
+              <TableCell>{movement.createdByName}</TableCell>
             </TableRow>
           ))
         )}

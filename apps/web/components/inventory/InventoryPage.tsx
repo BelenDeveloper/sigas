@@ -8,7 +8,8 @@ import { useState } from "react";
 
 import { useInventory } from "@/hooks/use-inventory";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import type { Product } from "@/lib/mocks/inventory.mock";
+import type { Product } from "@/lib/inventory-types";
+import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { AdjustStockDialog } from "./AdjustStockDialog";
 import { ProductFilters } from "./ProductFilters";
@@ -17,17 +18,18 @@ import { ProductTable } from "./ProductTable";
 import { StockMovementFilters } from "./StockMovementFilters";
 import { StockMovementTable } from "./StockMovementTable";
 
-const ADMIN_ROLE = "admin";
+const INVENTORY_MODULE = "inventory";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
 
 export function InventoryPage() {
   const authUser = useAtomValue(authUserAtom);
-  const canCreateProduct = authUser?.role === ADMIN_ROLE;
+  const canViewInventory = hasModulePermission(authUser, INVENTORY_MODULE, "canView");
+  const canCreateProduct = hasModulePermission(authUser, INVENTORY_MODULE, "canCreate");
 
   const {
     categories,
     subcategories,
     products,
-    allProducts,
     productFilters,
     setProductFilters,
     stockMovements,
@@ -36,13 +38,16 @@ export function InventoryPage() {
     createProduct,
     updateProduct,
     adjustStock,
-    suggestSku,
   } = useInventory();
 
   const [productFormOpen, setProductFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [adjustStockOpen, setAdjustStockOpen] = useState(false);
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
+
+  if (!canViewInventory) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
 
   const handleNewProduct = () => {
     setEditingProduct(null);
@@ -100,7 +105,7 @@ export function InventoryPage() {
             filters={stockMovementFilters}
             onFiltersChange={setStockMovementFilters}
           />
-          <StockMovementTable movements={stockMovements} products={allProducts} />
+          <StockMovementTable movements={stockMovements} />
         </TabsContent>
       </Tabs>
 
@@ -110,7 +115,6 @@ export function InventoryPage() {
         product={editingProduct}
         categories={categories}
         subcategories={subcategories}
-        suggestSku={suggestSku}
         onCreate={createProduct}
         onUpdate={updateProduct}
       />

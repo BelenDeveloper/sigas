@@ -3,21 +3,22 @@
 import { useMemo, useState } from "react";
 
 import {
-  MOCK_CATEGORIES,
-  MOCK_PRODUCTS,
-  MOCK_STOCK_MOVEMENTS,
-  MOCK_SUBCATEGORIES,
-  type Category,
   type Product,
+  type ProductCategory,
+  type ProductSubcategory,
   type ProductUnit,
   type StockMovement,
   type StockMovementType,
-  type Subcategory,
-} from "@/lib/mocks/inventory.mock";
+} from "@/lib/inventory-types";
+import { trpc } from "@/lib/trpc/client";
+
+import { useUsers } from "./use-users";
 
 export const ALL_CATEGORIES_OPTION_ID = "all";
 export const ALL_SUBCATEGORIES_OPTION_ID = "all";
 export const ALL_MOVEMENT_TYPES_OPTION = "all";
+
+const UNKNOWN_USER_LABEL = "Usuario desconocido";
 
 export interface ProductFilterState {
   searchTerm: string;
@@ -34,18 +35,18 @@ export interface StockMovementFilterState {
 }
 
 export interface ProductInput {
-  sku: string;
+  sku?: string;
   name: string;
   categoryId: string;
   subcategoryId: string;
   unit: ProductUnit;
   minimumStock: number;
   maximumStock: number;
-  costPriceBOB: number;
-  salePriceBOB: number;
+  costPrice: number;
+  salePrice: number;
   location: string;
-  netWeightKg: number;
-  grossWeightKg: number;
+  netWeight: number;
+  grossWeight: number;
   description: string;
 }
 
@@ -63,22 +64,10 @@ const DEFAULT_STOCK_MOVEMENT_FILTERS: StockMovementFilterState = {
   dateTo: "",
 };
 
-function nextSequence(existingSkus: string[], prefix: string): string {
-  const matchingNumbers = existingSkus
-    .filter((sku) => sku.startsWith(prefix))
-    .map((sku) => Number(sku.slice(prefix.length)))
-    .filter((value) => !Number.isNaN(value));
-
-  const nextNumber = matchingNumbers.length > 0 ? Math.max(...matchingNumbers) + 1 : 1;
-
-  return `${prefix}${String(nextNumber).padStart(3, "0")}`;
-}
-
 interface UseInventoryResult {
-  categories: Category[];
-  subcategories: Subcategory[];
+  categories: ProductCategory[];
+  subcategories: ProductSubcategory[];
   products: Product[];
-  allProducts: Product[];
   productFilters: ProductFilterState;
   setProductFilters: (filters: Partial<ProductFilterState>) => void;
   stockMovements: StockMovement[];
@@ -87,13 +76,29 @@ interface UseInventoryResult {
   createProduct: (input: ProductInput) => void;
   updateProduct: (productId: string, input: ProductInput) => void;
   adjustStock: (productId: string, quantityDelta: number, reason: string) => void;
-  suggestSku: (categoryId: string, subcategoryId: string) => string;
-  getProductById: (productId: string) => Product | undefined;
+}
+
+function toProductInput(input: ProductInput) {
+  return {
+    name: input.name,
+    description: input.description || undefined,
+    categoryId: input.categoryId || undefined,
+    subcategoryId: input.subcategoryId || undefined,
+    unit: input.unit,
+    costPrice: input.costPrice,
+    salePrice: input.salePrice,
+    minimumStock: input.minimumStock,
+    maximumStock: input.maximumStock,
+    location: input.location || undefined,
+    netWeight: input.netWeight || undefined,
+    grossWeight: input.grossWeight || undefined,
+  };
 }
 
 export function useInventory(): UseInventoryResult {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
-  const [stockMovements, setStockMovements] = useState<StockMovement[]>(MOCK_STOCK_MOVEMENTS);
+  const utils = trpc.useUtils();
+  const { users } = useUsers();
+
   const [productFilters, setProductFiltersState] =
     useState<ProductFilterState>(DEFAULT_PRODUCT_FILTERS);
   const [stockMovementFilters, setStockMovementFiltersState] = useState<StockMovementFilterState>(
@@ -108,145 +113,140 @@ export function useInventory(): UseInventoryResult {
     setStockMovementFiltersState((previous) => ({ ...previous, ...filters }));
   };
 
-  const getProductById = (productId: string) => products.find((product) => product.id === productId);
+  const { data: rawProducts } = trpc.inventory.listProducts.useQuery({
+    search: productFilters.searchTerm || undefined,
+    categoryId:
+      productFilters.categoryId !== ALL_CATEGORIES_OPTION_ID ? productFilters.categoryId : undefined,
+    subcategoryId:
+      productFilters.subcategoryId !== ALL_SUBCATEGORIES_OPTION_ID
+        ? productFilters.subcategoryId
+        : undefined,
+    showInactive: productFilters.showInactive,
+  });
 
-  const filteredProducts = useMemo(() => {
-    const normalizedSearchTerm = productFilters.searchTerm.trim().toLowerCase();
+  const { data: rawAllProducts } = trpc.inventory.listProducts.useQuery({ showInactive: true });
+  const { data: rawCategories } = trpc.inventory.listCategories.useQuery();
+  const { data: rawSubcategories } = trpc.inventory.listSubcategories.useQuery({});
 
-    return products.filter((product) => {
-      if (!productFilters.showInactive && !product.isActive) {
-        return false;
-      }
+  const { data: rawMovements } = trpc.inventory.listMovements.useQuery({
+    type:
+      stockMovementFilters.movementType !== ALL_MOVEMENT_TYPES_OPTION
+        ? stockMovementFilters.movementType
+        : undefined,
+    dateFrom: stockMovementFilters.dateFrom || undefined,
+    dateTo: stockMovementFilters.dateTo || undefined,
+  });
 
-      if (
-        productFilters.categoryId !== ALL_CATEGORIES_OPTION_ID &&
-        product.categoryId !== productFilters.categoryId
-      ) {
-        return false;
-      }
+  const invalidateProducts = () => {
+    void utils.inventory.listProducts.invalidate();
+    void utils.inventory.getLowStock.invalidate();
+  };
 
-      if (
-        productFilters.subcategoryId !== ALL_SUBCATEGORIES_OPTION_ID &&
-        product.subcategoryId !== productFilters.subcategoryId
-      ) {
-        return false;
-      }
+  const invalidateAfterStockChange = () => {
+    invalidateProducts();
+    void utils.inventory.listMovements.invalidate();
+  };
 
-      if (!normalizedSearchTerm) {
-        return true;
-      }
+  const createMutation = trpc.inventory.createProduct.useMutation({ onSuccess: invalidateProducts });
+  const updateMutation = trpc.inventory.updateProduct.useMutation({ onSuccess: invalidateProducts });
+  const adjustStockMutation = trpc.inventory.adjustStock.useMutation({
+    onSuccess: invalidateAfterStockChange,
+  });
 
-      return (
-        product.name.toLowerCase().includes(normalizedSearchTerm) ||
-        product.sku.toLowerCase().includes(normalizedSearchTerm)
-      );
-    });
-  }, [products, productFilters]);
+  const toProduct = (product: {
+    id: string;
+    sku: string;
+    name: string;
+    description: string | null;
+    categoryId: string | null;
+    subcategoryId: string | null;
+    unit: ProductUnit;
+    costPrice: string;
+    salePrice: string;
+    currentStock: string;
+    minimumStock: string;
+    maximumStock: string | null;
+    location: string | null;
+    netWeight: string | null;
+    grossWeight: string | null;
+    isActive: boolean;
+  }): Product => ({
+    id: product.id,
+    sku: product.sku,
+    name: product.name,
+    description: product.description ?? "",
+    categoryId: product.categoryId,
+    subcategoryId: product.subcategoryId,
+    unit: product.unit,
+    costPrice: Number(product.costPrice),
+    salePrice: Number(product.salePrice),
+    currentStock: Number(product.currentStock),
+    minimumStock: Number(product.minimumStock),
+    maximumStock: product.maximumStock !== null ? Number(product.maximumStock) : null,
+    location: product.location ?? "",
+    netWeight: product.netWeight !== null ? Number(product.netWeight) : null,
+    grossWeight: product.grossWeight !== null ? Number(product.grossWeight) : null,
+    isActive: product.isActive,
+  });
 
-  const filteredStockMovements = useMemo(() => {
+  const products = useMemo(() => (rawProducts ?? []).map(toProduct), [rawProducts]);
+  const allProducts = useMemo(() => (rawAllProducts ?? []).map(toProduct), [rawAllProducts]);
+  const categories: ProductCategory[] = rawCategories ?? [];
+  const subcategories: ProductSubcategory[] = rawSubcategories ?? [];
+
+  const stockMovements = useMemo(() => {
+    const userNameById = new Map(users.map((user) => [user.id, user.name]));
+    const productNameById = new Map(allProducts.map((product) => [product.id, product.name]));
     const normalizedSearchTerm = stockMovementFilters.searchTerm.trim().toLowerCase();
 
-    return stockMovements.filter((movement) => {
-      if (
-        stockMovementFilters.movementType !== ALL_MOVEMENT_TYPES_OPTION &&
-        movement.type !== stockMovementFilters.movementType
-      ) {
-        return false;
-      }
-
-      if (stockMovementFilters.dateFrom && movement.date < stockMovementFilters.dateFrom) {
-        return false;
-      }
-
-      if (stockMovementFilters.dateTo && movement.date > stockMovementFilters.dateTo) {
-        return false;
-      }
-
-      if (!normalizedSearchTerm) {
-        return true;
-      }
-
-      const product = products.find((item) => item.id === movement.productId);
-      return product ? product.name.toLowerCase().includes(normalizedSearchTerm) : false;
-    });
-  }, [stockMovements, stockMovementFilters, products]);
+    return (rawMovements ?? [])
+      .map((movement) => ({
+        id: movement.id,
+        productId: movement.productId,
+        productName: productNameById.get(movement.productId) ?? movement.productId,
+        type: movement.type,
+        quantity: Number(movement.quantity),
+        stockBefore: Number(movement.stockBefore),
+        newStock: Number(movement.newStock),
+        reason: movement.reason ?? "",
+        createdBy: movement.createdBy,
+        createdByName: userNameById.get(movement.createdBy) ?? UNKNOWN_USER_LABEL,
+        createdAt: movement.createdAt,
+      }))
+      .filter((movement) =>
+        normalizedSearchTerm ? movement.productName.toLowerCase().includes(normalizedSearchTerm) : true,
+      );
+  }, [rawMovements, users, allProducts, stockMovementFilters.searchTerm]);
 
   const createProduct = (input: ProductInput) => {
-    const newProduct: Product = {
-      ...input,
-      id: crypto.randomUUID(),
-      currentStock: 0,
-      isActive: true,
-    };
-
-    setProducts((previous) => [...previous, newProduct]);
+    createMutation.mutate(toProductInput(input));
   };
 
   const updateProduct = (productId: string, input: ProductInput) => {
-    setProducts((previous) =>
-      previous.map((product) => (product.id === productId ? { ...product, ...input } : product)),
-    );
+    const currentProduct = allProducts.find((product) => product.id === productId);
+
+    updateMutation.mutate({
+      id: productId,
+      ...toProductInput(input),
+      isActive: currentProduct?.isActive ?? true,
+    });
   };
 
   const adjustStock = (productId: string, quantityDelta: number, reason: string) => {
-    const product = getProductById(productId);
-    if (!product) {
-      return;
-    }
-
-    const stockBefore = product.currentStock;
-    const stockAfter = stockBefore + quantityDelta;
-    const movementType: StockMovementType = quantityDelta >= 0 ? "IN" : "OUT";
-
-    setProducts((previous) =>
-      previous.map((item) => (item.id === productId ? { ...item, currentStock: stockAfter } : item)),
-    );
-
-    const newMovement: StockMovement = {
-      id: crypto.randomUUID(),
-      date: new Date().toISOString().slice(0, 10),
-      productId,
-      type: movementType,
-      quantity: quantityDelta,
-      stockBefore,
-      stockAfter,
-      reason,
-      createdBy: "Tú",
-    };
-
-    setStockMovements((previous) => [newMovement, ...previous]);
-  };
-
-  const suggestSku = (categoryId: string, subcategoryId: string): string => {
-    const category = MOCK_CATEGORIES.find((item) => item.id === categoryId);
-    const subcategory = MOCK_SUBCATEGORIES.find((item) => item.id === subcategoryId);
-
-    if (!category || !subcategory) {
-      return "";
-    }
-
-    const prefix = `${category.name.slice(0, 3).toUpperCase()}-${subcategory.name.slice(0, 3).toUpperCase()}-`;
-
-    return nextSequence(
-      products.map((product) => product.sku),
-      prefix,
-    );
+    adjustStockMutation.mutate({ productId, quantity: quantityDelta, reason });
   };
 
   return {
-    categories: MOCK_CATEGORIES,
-    subcategories: MOCK_SUBCATEGORIES,
-    products: filteredProducts,
-    allProducts: products,
+    categories,
+    subcategories,
+    products,
     productFilters,
     setProductFilters,
-    stockMovements: filteredStockMovements,
+    stockMovements,
     stockMovementFilters,
     setStockMovementFilters,
     createProduct,
     updateProduct,
     adjustStock,
-    suggestSku,
-    getProductById,
   };
 }

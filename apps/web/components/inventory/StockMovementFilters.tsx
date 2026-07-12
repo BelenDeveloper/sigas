@@ -14,7 +14,7 @@ import {
   ALL_MOVEMENT_TYPES_OPTION,
   type StockMovementFilterState,
 } from "@/hooks/use-inventory";
-import type { StockMovementType } from "@/lib/mocks/inventory.mock";
+import type { StockMovementType } from "@/lib/inventory-types";
 
 const ALL_MOVEMENT_TYPES_LABEL = "Todos los tipos";
 

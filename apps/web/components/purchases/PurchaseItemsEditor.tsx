@@ -21,7 +21,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import type { PurchaseItemInput } from "@/hooks/use-purchases";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import type { Product } from "@/lib/mocks/inventory.mock";
+import type { Product } from "@/lib/inventory-types";
 
 const SELECT_PRODUCT_PLACEHOLDER = "Selecciona un producto";
 const NO_ITEMS_MESSAGE = "Todavía no agregaste productos.";
@@ -61,7 +61,7 @@ export function PurchaseItemsEditor({ items, onItemsChange, products }: Purchase
               ...item,
               productId,
               productName: product?.name ?? "",
-              unitCostBOB: product?.costPriceBOB ?? item.unitCostBOB,
+              unitCostBOB: product?.costPrice ?? item.unitCostBOB,
             }
           : item,
       ),
