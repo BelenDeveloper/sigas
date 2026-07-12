@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { MOCK_SUPPLIERS, type Supplier } from "@/lib/mocks/suppliers.mock";
+import type { Supplier } from "@/lib/supplier-types";
+import { trpc } from "@/lib/trpc/client";
 
 export interface SupplierInput {
   companyName: string;
@@ -23,59 +24,96 @@ interface UseSuppliersResult {
   createSupplier: (input: SupplierInput) => void;
   updateSupplier: (supplierId: string, input: SupplierInput) => void;
   toggleSupplierActive: (supplierId: string) => void;
+  isLoading: boolean;
+}
+
+function toSupplierInput(input: SupplierInput) {
+  return {
+    companyName: input.companyName,
+    contactName: input.contactName || undefined,
+    nit: input.nit || undefined,
+    phone: input.phone || undefined,
+    email: input.email || undefined,
+    address: input.address || undefined,
+    city: input.city || undefined,
+    country: input.country || undefined,
+    notes: input.notes || undefined,
+  };
 }
 
 export function useSuppliers(): UseSuppliersResult {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(MOCK_SUPPLIERS);
+  const utils = trpc.useUtils();
+
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredSuppliers = useMemo(() => {
-    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const { data: rawSuppliers } = trpc.suppliers.list.useQuery({
+    search: searchTerm || undefined,
+  });
 
-    if (!normalizedSearchTerm) {
-      return suppliers;
-    }
+  const invalidateSuppliers = () => void utils.suppliers.list.invalidate();
 
-    return suppliers.filter(
-      (supplier) =>
-        supplier.companyName.toLowerCase().includes(normalizedSearchTerm) ||
-        supplier.contactName.toLowerCase().includes(normalizedSearchTerm) ||
-        supplier.nit.toLowerCase().includes(normalizedSearchTerm),
-    );
-  }, [suppliers, searchTerm]);
+  const createMutation = trpc.suppliers.create.useMutation({ onSuccess: invalidateSuppliers });
+  const updateMutation = trpc.suppliers.update.useMutation({ onSuccess: invalidateSuppliers });
+  const toggleActiveMutation = trpc.suppliers.toggleActive.useMutation({
+    onSuccess: invalidateSuppliers,
+  });
+
+  const toSupplier = (supplier: {
+    id: string;
+    companyName: string;
+    contactName: string | null;
+    nit: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    city: string | null;
+    country: string;
+    notes: string | null;
+    isActive: boolean;
+  }): Supplier => ({
+    id: supplier.id,
+    companyName: supplier.companyName,
+    contactName: supplier.contactName ?? "",
+    nit: supplier.nit ?? "",
+    phone: supplier.phone ?? "",
+    email: supplier.email ?? "",
+    address: supplier.address ?? "",
+    city: supplier.city ?? "",
+    country: supplier.country,
+    notes: supplier.notes ?? "",
+    isActive: supplier.isActive,
+  });
+
+  const suppliers = useMemo(() => (rawSuppliers ?? []).map(toSupplier), [rawSuppliers]);
+
+  const getSupplierById = (supplierId: string) =>
+    suppliers.find((supplier) => supplier.id === supplierId);
 
   const createSupplier = (input: SupplierInput) => {
-    const newSupplier: Supplier = {
-      ...input,
-      id: crypto.randomUUID(),
-      isActive: true,
-    };
-
-    setSuppliers((previous) => [...previous, newSupplier]);
+    createMutation.mutate(toSupplierInput(input));
   };
 
   const updateSupplier = (supplierId: string, input: SupplierInput) => {
-    setSuppliers((previous) =>
-      previous.map((supplier) =>
-        supplier.id === supplierId ? { ...supplier, ...input } : supplier,
-      ),
-    );
+    const currentSupplier = getSupplierById(supplierId);
+
+    updateMutation.mutate({
+      id: supplierId,
+      ...toSupplierInput(input),
+      isActive: currentSupplier?.isActive ?? true,
+    });
   };
 
   const toggleSupplierActive = (supplierId: string) => {
-    setSuppliers((previous) =>
-      previous.map((supplier) =>
-        supplier.id === supplierId ? { ...supplier, isActive: !supplier.isActive } : supplier,
-      ),
-    );
+    toggleActiveMutation.mutate({ id: supplierId });
   };
 
   return {
-    suppliers: filteredSuppliers,
+    suppliers,
     searchTerm,
     setSearchTerm,
     createSupplier,
     updateSupplier,
     toggleSupplierActive,
+    isLoading: rawSuppliers === undefined,
   };
 }

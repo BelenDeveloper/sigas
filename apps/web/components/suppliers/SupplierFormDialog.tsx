@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { SupplierInput } from "@/hooks/use-suppliers";
-import { DEFAULT_SUPPLIER_COUNTRY, type Supplier } from "@/lib/mocks/suppliers.mock";
+import { DEFAULT_SUPPLIER_COUNTRY, type Supplier } from "@/lib/supplier-types";
 
 const COMPANY_NAME_REQUIRED_MESSAGE = "El nombre de la empresa es obligatorio.";
 const INVALID_EMAIL_MESSAGE = "Ingresa un correo electrónico válido.";

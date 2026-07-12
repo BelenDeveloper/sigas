@@ -2,21 +2,38 @@
 
 import { Button } from "@repo/ui/components/ui/button";
 import { Input } from "@repo/ui/components/ui/input";
+import { useAtomValue } from "jotai";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { useSuppliers } from "@/hooks/use-suppliers";
-import type { Supplier } from "@/lib/mocks/suppliers.mock";
+import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { hasModulePermission } from "@/lib/permission-helpers";
+import type { Supplier } from "@/lib/supplier-types";
 
 import { SupplierFormDialog } from "./SupplierFormDialog";
 import { SupplierTable } from "./SupplierTable";
 
+const SUPPLIERS_MODULE = "suppliers";
+const ADMIN_ROLE = "admin";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
+
 export function SuppliersPage() {
+  const authUser = useAtomValue(authUserAtom);
+  const canViewSuppliers = hasModulePermission(authUser, SUPPLIERS_MODULE, "canView");
+  const canCreateSupplier = hasModulePermission(authUser, SUPPLIERS_MODULE, "canCreate");
+  const canEditSupplier = hasModulePermission(authUser, SUPPLIERS_MODULE, "canEdit");
+  const canToggleActive = authUser?.role === ADMIN_ROLE;
+
   const { suppliers, searchTerm, setSearchTerm, createSupplier, updateSupplier, toggleSupplierActive } =
     useSuppliers();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+  if (!canViewSuppliers) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
 
   const handleNewSupplier = () => {
     setEditingSupplier(null);
@@ -37,17 +54,21 @@ export function SuppliersPage() {
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
         />
-        <Button
-          className="bg-brand text-brand-foreground hover:bg-brand/90"
-          onClick={handleNewSupplier}
-        >
-          <Plus className="size-4" />
-          Nuevo proveedor
-        </Button>
+        {canCreateSupplier ? (
+          <Button
+            className="bg-brand text-brand-foreground hover:bg-brand/90"
+            onClick={handleNewSupplier}
+          >
+            <Plus className="size-4" />
+            Nuevo proveedor
+          </Button>
+        ) : null}
       </div>
 
       <SupplierTable
         suppliers={suppliers}
+        canEdit={canEditSupplier}
+        canToggleActive={canToggleActive}
         onEdit={handleEditSupplier}
         onToggleActive={(supplier) => toggleSupplierActive(supplier.id)}
       />

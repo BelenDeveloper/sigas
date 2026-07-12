@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import type { PayableFilterState, PayableInput, PayablePaymentInput } from "@/hooks/use-cash";
 import type { Payable } from "@/lib/mocks/cash.mock";
-import type { Supplier } from "@/lib/mocks/suppliers.mock";
+import type { Supplier } from "@/lib/supplier-types";
 
 import { AddPayableDialog } from "./AddPayableDialog";
 import { AddPaymentDialog } from "./AddPaymentDialog";

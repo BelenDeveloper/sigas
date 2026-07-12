@@ -25,7 +25,7 @@ import { z } from "zod";
 
 import type { PayableInput } from "@/hooks/use-cash";
 import { CREDITOR_TYPES, CREDITOR_TYPE_LABELS, type CreditorType } from "@/lib/mocks/cash.mock";
-import type { Supplier } from "@/lib/mocks/suppliers.mock";
+import type { Supplier } from "@/lib/supplier-types";
 
 const SUPPLIER_REQUIRED_MESSAGE = "Selecciona un proveedor.";
 const CREDITOR_NAME_REQUIRED_MESSAGE = "El nombre del acreedor es obligatorio.";

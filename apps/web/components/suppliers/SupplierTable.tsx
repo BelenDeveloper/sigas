@@ -10,7 +10,7 @@ import {
 } from "@repo/ui/components/ui/table";
 import { Pencil, Power } from "lucide-react";
 
-import type { Supplier } from "@/lib/mocks/suppliers.mock";
+import type { Supplier } from "@/lib/supplier-types";
 
 const NO_SUPPLIERS_MESSAGE = "No se encontraron proveedores con estos filtros.";
 const ACTIVE_LABEL = "Activo";
@@ -19,11 +19,19 @@ const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
 
 interface SupplierTableProps {
   suppliers: Supplier[];
+  canEdit: boolean;
+  canToggleActive: boolean;
   onEdit: (supplier: Supplier) => void;
   onToggleActive: (supplier: Supplier) => void;
 }
 
-export function SupplierTable({ suppliers, onEdit, onToggleActive }: SupplierTableProps) {
+export function SupplierTable({
+  suppliers,
+  canEdit,
+  canToggleActive,
+  onEdit,
+  onToggleActive,
+}: SupplierTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -66,22 +74,26 @@ export function SupplierTable({ suppliers, onEdit, onToggleActive }: SupplierTab
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Editar proveedor"
-                    onClick={() => onEdit(supplier)}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={supplier.isActive ? "Desactivar proveedor" : "Activar proveedor"}
-                    onClick={() => onToggleActive(supplier)}
-                  >
-                    <Power className="size-4" />
-                  </Button>
+                  {canEdit ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Editar proveedor"
+                      onClick={() => onEdit(supplier)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                  ) : null}
+                  {canToggleActive ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={supplier.isActive ? "Desactivar proveedor" : "Activar proveedor"}
+                      onClick={() => onToggleActive(supplier)}
+                    >
+                      <Power className="size-4" />
+                    </Button>
+                  ) : null}
                 </div>
               </TableCell>
             </TableRow>
