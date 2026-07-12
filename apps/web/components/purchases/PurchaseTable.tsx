@@ -12,14 +12,8 @@ import {
 import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import type { PurchaseListItem } from "@/hooks/use-purchases";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import type { Purchase } from "@/lib/mocks/purchases.mock";
-import {
-  getPurchasePaidBOB,
-  getPurchasePendingBOB,
-  getPurchaseStatus,
-  getPurchaseTotalBOB,
-} from "@/lib/purchase-helpers";
 
 import { PurchaseStatusBadge } from "./PurchaseStatusBadge";
 
@@ -35,7 +29,7 @@ function formatPurchaseDate(isoDate: string): string {
 }
 
 interface PurchaseTableProps {
-  purchases: Purchase[];
+  purchases: PurchaseListItem[];
 }
 
 export function PurchaseTable({ purchases }: PurchaseTableProps) {
@@ -68,46 +62,37 @@ export function PurchaseTable({ purchases }: PurchaseTableProps) {
             </TableCell>
           </TableRow>
         ) : (
-          purchases.map((purchase) => {
-            const totalBOB = getPurchaseTotalBOB(purchase);
-            const paidBOB = getPurchasePaidBOB(purchase);
-            const pendingBOB = getPurchasePendingBOB(purchase);
-            const status = getPurchaseStatus(purchase);
-
-            return (
-              <TableRow
-                key={purchase.id}
-                className="cursor-pointer"
-                onClick={() => goToPurchaseDetail(purchase.id)}
-              >
-                <TableCell className="font-mono text-xs">{purchase.code}</TableCell>
-                <TableCell>{formatPurchaseDate(purchase.date)}</TableCell>
-                <TableCell className="font-medium text-foreground">
-                  {purchase.supplierName}
-                </TableCell>
-                <TableCell>{purchase.items.length}</TableCell>
-                <TableCell>{formatCurrencyBOB(totalBOB)}</TableCell>
-                <TableCell>{formatCurrencyBOB(paidBOB)}</TableCell>
-                <TableCell>{formatCurrencyBOB(pendingBOB)}</TableCell>
-                <TableCell>
-                  <PurchaseStatusBadge status={status} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Ver compra"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      goToPurchaseDetail(purchase.id);
-                    }}
-                  >
-                    <Eye className="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })
+          purchases.map((purchase) => (
+            <TableRow
+              key={purchase.id}
+              className="cursor-pointer"
+              onClick={() => goToPurchaseDetail(purchase.id)}
+            >
+              <TableCell className="font-mono text-xs">{purchase.code}</TableCell>
+              <TableCell>{formatPurchaseDate(purchase.date)}</TableCell>
+              <TableCell className="font-medium text-foreground">{purchase.supplierName}</TableCell>
+              <TableCell>{purchase.itemCount}</TableCell>
+              <TableCell>{formatCurrencyBOB(purchase.totalBOB)}</TableCell>
+              <TableCell>{formatCurrencyBOB(purchase.paidBOB)}</TableCell>
+              <TableCell>{formatCurrencyBOB(purchase.pendingBOB)}</TableCell>
+              <TableCell>
+                <PurchaseStatusBadge status={purchase.status} />
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Ver compra"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goToPurchaseDetail(purchase.id);
+                  }}
+                >
+                  <Eye className="size-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))
         )}
       </TableBody>
     </Table>

@@ -1,12 +1,10 @@
 "use client";
 
-import { useAtom } from "jotai";
 import { useMemo, useState } from "react";
 
-import { purchasesAtom } from "@/lib/atoms/purchases.atom";
-import type { Purchase, PurchaseItem, PurchasePayment } from "@/lib/mocks/purchases.mock";
 import type { PaymentMethod } from "@/lib/payment-method";
-import { getPurchaseStatus, type PurchaseStatus } from "@/lib/purchase-helpers";
+import type { PurchaseStatus } from "@/lib/purchase-types";
+import { trpc } from "@/lib/trpc/client";
 
 export const ALL_PURCHASE_STATUSES_OPTION = "all";
 
@@ -32,11 +30,58 @@ export interface PurchasePaymentInput {
 
 export interface PurchaseInput {
   supplierId: string;
-  supplierName: string;
   date: string;
   invoiceNumber: string;
   notes: string;
   items: PurchaseItemInput[];
+}
+
+export interface PurchaseListItem {
+  id: string;
+  code: string;
+  date: string;
+  supplierId: string | null;
+  supplierName: string;
+  status: PurchaseStatus;
+  itemCount: number;
+  totalBOB: number;
+  paidBOB: number;
+  pendingBOB: number;
+}
+
+export interface PurchaseItemDetail {
+  id: string;
+  productId: string;
+  productName: string;
+  productSku: string;
+  quantity: number;
+  unitCostBOB: number;
+  subtotalBOB: number;
+  notes: string;
+}
+
+export interface PurchasePaymentDetail {
+  id: string;
+  amountBOB: number;
+  paymentMethod: PaymentMethod;
+  accountDestination: string;
+  paidAt: string;
+  notes: string;
+}
+
+export interface PurchaseDetail {
+  id: string;
+  code: string;
+  status: PurchaseStatus;
+  supplierId: string | null;
+  invoiceNumber: string;
+  purchaseDate: string;
+  notes: string;
+  totalBOB: number;
+  paidBOB: number;
+  pendingBOB: number;
+  items: PurchaseItemDetail[];
+  payments: PurchasePaymentDetail[];
 }
 
 const DEFAULT_FILTERS: PurchaseFilterState = {
@@ -46,110 +91,144 @@ const DEFAULT_FILTERS: PurchaseFilterState = {
   dateTo: "",
 };
 
-const CODE_PREFIX = "COM";
-const CODE_SEQUENCE_LENGTH = 4;
-
-function generatePurchaseCode(purchases: Purchase[]): string {
-  const matchingNumbers = purchases
-    .filter((purchase) => purchase.code.startsWith(`${CODE_PREFIX}-`))
-    .map((purchase) => Number(purchase.code.slice(CODE_PREFIX.length + 1)))
-    .filter((value) => !Number.isNaN(value));
-
-  const nextNumber = matchingNumbers.length > 0 ? Math.max(...matchingNumbers) + 1 : 1;
-
-  return `${CODE_PREFIX}-${String(nextNumber).padStart(CODE_SEQUENCE_LENGTH, "0")}`;
-}
-
-function toPurchaseItem(input: PurchaseItemInput): PurchaseItem {
-  return { ...input, id: crypto.randomUUID() };
-}
-
-function toPurchasePayment(input: PurchasePaymentInput, date: string): PurchasePayment {
-  return { ...input, id: crypto.randomUUID(), date };
+function toPurchasePaymentMutationInput(purchaseId: string, payment: PurchasePaymentInput) {
+  return {
+    purchaseId,
+    amount: payment.amountBOB,
+    paymentMethod: payment.method,
+    accountDestination: payment.accountDestination || undefined,
+  };
 }
 
 interface UsePurchasesResult {
-  purchases: Purchase[];
+  purchases: PurchaseListItem[];
   filters: PurchaseFilterState;
   setFilters: (filters: Partial<PurchaseFilterState>) => void;
-  createPurchase: (input: PurchaseInput) => Purchase;
-  getPurchaseById: (purchaseId: string) => Purchase | undefined;
-  addPayment: (purchaseId: string, payment: PurchasePaymentInput) => void;
+  createPurchase: (input: PurchaseInput) => Promise<{ id: string }>;
+  isLoading: boolean;
 }
 
 export function usePurchases(): UsePurchasesResult {
-  const [allPurchases, setAllPurchases] = useAtom(purchasesAtom);
+  const utils = trpc.useUtils();
+
   const [filters, setFiltersState] = useState<PurchaseFilterState>(DEFAULT_FILTERS);
 
   const setFilters = (partialFilters: Partial<PurchaseFilterState>) => {
     setFiltersState((previous) => ({ ...previous, ...partialFilters }));
   };
 
-  const filteredPurchases = useMemo(() => {
+  const { data: rawPurchases } = trpc.purchases.list.useQuery({
+    status: filters.status !== ALL_PURCHASE_STATUSES_OPTION ? filters.status : undefined,
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
+  });
+
+  const invalidatePurchases = () => void utils.purchases.list.invalidate();
+
+  const createMutation = trpc.purchases.create.useMutation({ onSuccess: invalidatePurchases });
+
+  const purchases = useMemo<PurchaseListItem[]>(() => {
     const normalizedSearchTerm = filters.searchTerm.trim().toLowerCase();
 
-    return allPurchases.filter((purchase) => {
-      if (
-        filters.status !== ALL_PURCHASE_STATUSES_OPTION &&
-        getPurchaseStatus(purchase) !== filters.status
-      ) {
-        return false;
-      }
+    return (rawPurchases ?? [])
+      .map((purchase) => ({
+        id: purchase.id,
+        code: purchase.code,
+        date: purchase.purchaseDate,
+        supplierId: purchase.supplierId,
+        supplierName: purchase.supplierName ?? "",
+        status: purchase.status,
+        itemCount: purchase.itemCount,
+        totalBOB: Number(purchase.total),
+        paidBOB: purchase.totalPaid,
+        pendingBOB: purchase.totalPending,
+      }))
+      .filter((purchase) =>
+        normalizedSearchTerm ? purchase.supplierName.toLowerCase().includes(normalizedSearchTerm) : true,
+      );
+  }, [rawPurchases, filters.searchTerm]);
 
-      if (filters.dateFrom && purchase.date < filters.dateFrom) {
-        return false;
-      }
-
-      if (filters.dateTo && purchase.date > filters.dateTo) {
-        return false;
-      }
-
-      if (!normalizedSearchTerm) {
-        return true;
-      }
-
-      return purchase.supplierName.toLowerCase().includes(normalizedSearchTerm);
+  const createPurchase = (input: PurchaseInput): Promise<{ id: string }> => {
+    return createMutation.mutateAsync({
+      supplierId: input.supplierId || undefined,
+      invoiceNumber: input.invoiceNumber || undefined,
+      purchaseDate: input.date || undefined,
+      notes: input.notes || undefined,
+      items: input.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCostBOB,
+      })),
     });
-  }, [allPurchases, filters]);
-
-  const getPurchaseById = (purchaseId: string) =>
-    allPurchases.find((purchase) => purchase.id === purchaseId);
-
-  const createPurchase = (input: PurchaseInput): Purchase => {
-    const newPurchase: Purchase = {
-      id: crypto.randomUUID(),
-      code: generatePurchaseCode(allPurchases),
-      date: input.date,
-      supplierId: input.supplierId,
-      supplierName: input.supplierName,
-      invoiceNumber: input.invoiceNumber,
-      notes: input.notes,
-      items: input.items.map(toPurchaseItem),
-      payments: [],
-    };
-
-    setAllPurchases((previous) => [newPurchase, ...previous]);
-    return newPurchase;
-  };
-
-  const addPayment = (purchaseId: string, payment: PurchasePaymentInput) => {
-    const today = new Date().toISOString().slice(0, 10);
-
-    setAllPurchases((previous) =>
-      previous.map((purchase) =>
-        purchase.id === purchaseId
-          ? { ...purchase, payments: [...purchase.payments, toPurchasePayment(payment, today)] }
-          : purchase,
-      ),
-    );
   };
 
   return {
-    purchases: filteredPurchases,
+    purchases,
     filters,
     setFilters,
     createPurchase,
-    getPurchaseById,
-    addPayment,
+    isLoading: rawPurchases === undefined,
   };
+}
+
+interface UsePurchaseResult {
+  purchase: PurchaseDetail | undefined;
+  isLoading: boolean;
+  addPayment: (payment: PurchasePaymentInput) => void;
+}
+
+export function usePurchase(purchaseId: string): UsePurchaseResult {
+  const utils = trpc.useUtils();
+
+  const { data: rawPurchase, isLoading } = trpc.purchases.get.useQuery({ id: purchaseId });
+
+  const invalidatePurchase = () => {
+    void utils.purchases.get.invalidate({ id: purchaseId });
+    void utils.purchases.list.invalidate();
+  };
+
+  const addPaymentMutation = trpc.purchases.addPayment.useMutation({ onSuccess: invalidatePurchase });
+
+  const purchase = useMemo<PurchaseDetail | undefined>(() => {
+    if (!rawPurchase) {
+      return undefined;
+    }
+
+    return {
+      id: rawPurchase.id,
+      code: rawPurchase.code,
+      status: rawPurchase.status,
+      supplierId: rawPurchase.supplierId,
+      invoiceNumber: rawPurchase.invoiceNumber ?? "",
+      purchaseDate: rawPurchase.purchaseDate,
+      notes: rawPurchase.notes ?? "",
+      totalBOB: Number(rawPurchase.total),
+      paidBOB: rawPurchase.totalPaid,
+      pendingBOB: rawPurchase.totalPending,
+      items: rawPurchase.items.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        productSku: item.productSku,
+        quantity: Number(item.quantity),
+        unitCostBOB: Number(item.unitCost),
+        subtotalBOB: Number(item.subtotal),
+        notes: item.notes ?? "",
+      })),
+      payments: rawPurchase.payments.map((payment) => ({
+        id: payment.id,
+        amountBOB: Number(payment.amount),
+        paymentMethod: payment.paymentMethod,
+        accountDestination: payment.accountDestination ?? "",
+        paidAt: String(payment.paidAt),
+        notes: payment.notes ?? "",
+      })),
+    };
+  }, [rawPurchase]);
+
+  const addPayment = (payment: PurchasePaymentInput) => {
+    addPaymentMutation.mutate(toPurchasePaymentMutationInput(purchaseId, payment));
+  };
+
+  return { purchase, isLoading, addPayment };
 }

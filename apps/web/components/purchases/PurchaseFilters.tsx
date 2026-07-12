@@ -11,10 +11,9 @@ import {
 } from "@repo/ui/components/ui/select";
 
 import { ALL_PURCHASE_STATUSES_OPTION, type PurchaseFilterState } from "@/hooks/use-purchases";
-import { PURCHASE_STATUS_LABELS, type PurchaseStatus } from "@/lib/purchase-helpers";
+import { PURCHASE_STATUSES, PURCHASE_STATUS_LABELS } from "@/lib/purchase-types";
 
 const ALL_STATUSES_LABEL = "Todos los estados";
-const PURCHASE_STATUSES: PurchaseStatus[] = ["pending", "partial", "paid"];
 
 interface PurchaseFiltersProps {
   filters: PurchaseFilterState;

@@ -19,22 +19,21 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
+import { useAtomValue } from "jotai";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { usePurchases, type PurchasePaymentInput } from "@/hooks/use-purchases";
+import { usePurchase, type PurchasePaymentInput } from "@/hooks/use-purchases";
+import { authUserAtom } from "@/lib/atoms/auth.atom";
 import { formatCurrencyBOB } from "@/lib/format-currency";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
-import {
-  getPurchasePaidBOB,
-  getPurchasePendingBOB,
-  getPurchaseStatus,
-  getPurchaseTotalBOB,
-} from "@/lib/purchase-helpers";
+import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { PurchaseStatusBadge } from "./PurchaseStatusBadge";
 
+const PURCHASES_MODULE = "purchases";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
 const PURCHASE_NOT_FOUND_MESSAGE = "No se encontró la compra solicitada.";
 const PURCHASES_ROUTE = "/purchases";
 const DATE_LOCALE = "es-BO";
@@ -59,11 +58,22 @@ interface PurchaseDetailPageProps {
 }
 
 export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
-  const { getPurchaseById, addPayment } = usePurchases();
-  const purchase = getPurchaseById(purchaseId);
+  const authUser = useAtomValue(authUserAtom);
+  const canViewPurchases = hasModulePermission(authUser, PURCHASES_MODULE, "canView");
+  const canEditPurchase = hasModulePermission(authUser, PURCHASES_MODULE, "canEdit");
+
+  const { purchase, isLoading, addPayment } = usePurchase(purchaseId);
 
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [newPayment, setNewPayment] = useState<PurchasePaymentInput>(EMPTY_PAYMENT);
+
+  if (!canViewPurchases) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!purchase) {
     return (
@@ -82,13 +92,8 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
     );
   }
 
-  const totalBOB = getPurchaseTotalBOB(purchase);
-  const paidBOB = getPurchasePaidBOB(purchase);
-  const pendingBOB = getPurchasePendingBOB(purchase);
-  const status = getPurchaseStatus(purchase);
-
   const handleConfirmPayment = () => {
-    addPayment(purchase.id, newPayment);
+    addPayment(newPayment);
     setNewPayment(EMPTY_PAYMENT);
     setIsAddingPayment(false);
   };
@@ -109,14 +114,13 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
             <CardTitle className="text-xl">{purchase.code}</CardTitle>
-            <p className="text-sm text-muted-foreground">{purchase.supplierName}</p>
           </div>
-          <PurchaseStatusBadge status={status} />
+          <PurchaseStatusBadge status={purchase.status} />
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Fecha</span>
-            <span className="text-sm text-foreground">{formatDate(purchase.date)}</span>
+            <span className="text-sm text-foreground">{formatDate(purchase.purchaseDate)}</span>
           </div>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Número de factura</span>
@@ -149,7 +153,7 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
                   <TableCell className="font-medium text-foreground">{item.productName}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
                   <TableCell>{formatCurrencyBOB(item.unitCostBOB)}</TableCell>
-                  <TableCell>{formatCurrencyBOB(item.quantity * item.unitCostBOB)}</TableCell>
+                  <TableCell>{formatCurrencyBOB(item.subtotalBOB)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -160,7 +164,7 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Pagos</CardTitle>
-          {!isAddingPayment ? (
+          {canEditPurchase && !isAddingPayment ? (
             <Button variant="outline" size="sm" onClick={() => setIsAddingPayment(true)}>
               <Plus className="size-4" />
               Agregar pago
@@ -180,9 +184,9 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
             <TableBody>
               {purchase.payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell>{formatDate(payment.date)}</TableCell>
+                  <TableCell>{formatDate(payment.paidAt)}</TableCell>
                   <TableCell>{formatCurrencyBOB(payment.amountBOB)}</TableCell>
-                  <TableCell>{PAYMENT_METHOD_LABELS[payment.method]}</TableCell>
+                  <TableCell>{PAYMENT_METHOD_LABELS[payment.paymentMethod]}</TableCell>
                   <TableCell>{payment.accountDestination || "—"}</TableCell>
                 </TableRow>
               ))}
@@ -254,10 +258,10 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
           ) : null}
 
           <div className="flex flex-col gap-1 border-t pt-4 text-sm">
-            <span className="text-muted-foreground">Total: {formatCurrencyBOB(totalBOB)}</span>
-            <span className="text-muted-foreground">Pagado: {formatCurrencyBOB(paidBOB)}</span>
+            <span className="text-muted-foreground">Total: {formatCurrencyBOB(purchase.totalBOB)}</span>
+            <span className="text-muted-foreground">Pagado: {formatCurrencyBOB(purchase.paidBOB)}</span>
             <span className="font-semibold text-foreground">
-              Saldo pendiente: {formatCurrencyBOB(pendingBOB)}
+              Saldo pendiente: {formatCurrencyBOB(purchase.pendingBOB)}
             </span>
           </div>
         </CardContent>

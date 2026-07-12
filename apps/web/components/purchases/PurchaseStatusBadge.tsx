@@ -1,6 +1,6 @@
 import { Badge } from "@repo/ui/components/ui/badge";
 
-import { PURCHASE_STATUS_LABELS, type PurchaseStatus } from "@/lib/purchase-helpers";
+import { PURCHASE_STATUS_LABELS, type PurchaseStatus } from "@/lib/purchase-types";
 
 const PURCHASE_STATUS_BADGE_CLASSES: Record<PurchaseStatus, string> = {
   pending: "bg-red-100 text-red-800",
