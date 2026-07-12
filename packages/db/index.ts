@@ -27,6 +27,16 @@ export {
   STOCK_MOVEMENT_TYPES,
 } from "./schema/inventory.js";
 export type {
+  NewPurchase,
+  NewPurchaseItem,
+  NewPurchasePayment,
+  Purchase,
+  PurchaseItem,
+  PurchasePayment,
+  PurchaseStatus,
+} from "./schema/purchases.js";
+export { PURCHASE_CODE_SEQUENCE_NAME, PURCHASE_STATUSES } from "./schema/purchases.js";
+export type {
   NewSale,
   NewSaleItem,
   NewSalePayment,
