@@ -26,6 +26,18 @@ export {
   STOCK_MOVEMENT_REFERENCE_TYPES,
   STOCK_MOVEMENT_TYPES,
 } from "./schema/inventory.js";
+export type {
+  NewSale,
+  NewSaleItem,
+  NewSalePayment,
+  PaymentMethod,
+  Sale,
+  SaleItem,
+  SalePayment,
+  SaleStatus,
+  SaleType,
+} from "./schema/sales.js";
+export { PAYMENT_METHODS, SALE_CODE_SEQUENCE_NAMES, SALE_STATUSES, SALE_TYPES } from "./schema/sales.js";
 export type { NewSupplier, Supplier } from "./schema/suppliers.js";
 export type {
   ModuleKey,

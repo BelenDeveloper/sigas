@@ -1,5 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import { db, schema, type Product, type ProductCategory, type ProductSubcategory, type StockMovement } from "@repo/db";
+import {
+  db,
+  schema,
+  type Product,
+  type ProductCategory,
+  type ProductSubcategory,
+  type StockMovement,
+  type StockMovementReferenceType,
+} from "@repo/db";
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 
 import {
@@ -132,6 +140,7 @@ export class InventoryService {
     quantity: number,
     reason: string | undefined,
     userId: string,
+    reference?: { id: string; type: StockMovementReferenceType },
   ): Promise<Product> {
     return db.transaction(async (tx) => {
       const [product] = await tx
@@ -168,6 +177,8 @@ export class InventoryService {
         stockBefore: stockBefore.toString(),
         newStock: newStock.toString(),
         reason,
+        referenceId: reference?.id,
+        referenceType: reference?.type,
         createdBy: userId,
       });
 
