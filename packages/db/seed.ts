@@ -1,13 +1,15 @@
 import "dotenv/config";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "./client.js";
 import {
   companies,
   companyUserAccess,
   MODULES,
+  productCategories,
+  productSubcategories,
   userModulePermissions,
   users,
   type ModuleKey,
@@ -119,6 +121,17 @@ const SEED_COMPANIES: SeedCompany[] = [
     description: "Sucursal de Santa Cruz",
     grantedEmails: [],
   },
+];
+
+interface SeedProductCategory {
+  name: string;
+  subcategoryNames: string[];
+}
+
+const SEED_PRODUCT_CATEGORIES: SeedProductCategory[] = [
+  { name: "Tuberías", subcategoryNames: ["PVC", "Cobre", "Polietileno"] },
+  { name: "Accesorios", subcategoryNames: ["Conexiones", "Válvulas", "Reguladores"] },
+  { name: "Herramientas", subcategoryNames: ["Manuales", "Medición", "Seguridad"] },
 ];
 
 function getSupabaseAdminClient(): SupabaseClient {
@@ -233,6 +246,48 @@ async function createSeedCompany(company: SeedCompany, createdByUserId: string):
   }
 }
 
+async function createSeedProductCategory(category: SeedProductCategory): Promise<void> {
+  const [existingCategory] = await db
+    .select()
+    .from(productCategories)
+    .where(eq(productCategories.name, category.name))
+    .limit(1);
+
+  let categoryId: string;
+
+  if (existingCategory) {
+    console.log(`Skipping product category ${category.name} — already exists.`);
+    categoryId = existingCategory.id;
+  } else {
+    const [newCategory] = await db.insert(productCategories).values({ name: category.name }).returning();
+
+    if (!newCategory) {
+      throw new Error(`Failed to insert product category row for ${category.name}`);
+    }
+
+    categoryId = newCategory.id;
+    console.log(`Seeded product category ${category.name}.`);
+  }
+
+  for (const subcategoryName of category.subcategoryNames) {
+    const [existingSubcategory] = await db
+      .select()
+      .from(productSubcategories)
+      .where(
+        and(eq(productSubcategories.categoryId, categoryId), eq(productSubcategories.name, subcategoryName)),
+      )
+      .limit(1);
+
+    if (existingSubcategory) {
+      console.log(`Skipping product subcategory ${subcategoryName} — already exists.`);
+      continue;
+    }
+
+    await db.insert(productSubcategories).values({ categoryId, name: subcategoryName });
+    console.log(`Seeded product subcategory ${subcategoryName}.`);
+  }
+}
+
 async function main(): Promise<void> {
   const supabase = getSupabaseAdminClient();
 
@@ -249,6 +304,10 @@ async function main(): Promise<void> {
 
   for (const company of SEED_COMPANIES) {
     await createSeedCompany(company, adminUserId);
+  }
+
+  for (const category of SEED_PRODUCT_CATEGORIES) {
+    await createSeedProductCategory(category);
   }
 }
 

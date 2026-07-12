@@ -7,6 +7,24 @@ export type {
   NewCompanyUserAccess,
 } from "./schema/companies.js";
 export type {
+  NewProduct,
+  NewProductCategory,
+  NewProductSubcategory,
+  NewStockMovement,
+  Product,
+  ProductCategory,
+  ProductSubcategory,
+  ProductUnit,
+  StockMovement,
+  StockMovementReferenceType,
+  StockMovementType,
+} from "./schema/inventory.js";
+export {
+  PRODUCT_UNITS,
+  STOCK_MOVEMENT_REFERENCE_TYPES,
+  STOCK_MOVEMENT_TYPES,
+} from "./schema/inventory.js";
+export type {
   ModuleKey,
   NewUserModulePermission,
   UserModulePermission,
