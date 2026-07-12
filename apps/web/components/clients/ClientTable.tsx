@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/ui/badge";
 import { Button } from "@repo/ui/components/ui/button";
 import {
   Table,
@@ -9,23 +10,31 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Power } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { DOCUMENT_TYPE_LABELS, type Client } from "@/lib/mocks/clients.mock";
-
-import { ClientDebtBadge } from "./ClientDebtBadge";
+import { CLIENT_DOCUMENT_TYPE_LABELS, type Client } from "@/lib/client-types";
 
 const NO_CLIENTS_MESSAGE = "No se encontraron clientes con estos filtros.";
+const ACTIVE_LABEL = "Activo";
+const INACTIVE_LABEL = "Inactivo";
+const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
 
 interface ClientTableProps {
   clients: Client[];
-  canDelete: boolean;
+  canEdit: boolean;
+  canToggleActive: boolean;
   onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
+  onToggleActive: (client: Client) => void;
 }
 
-export function ClientTable({ clients, canDelete, onEdit, onDelete }: ClientTableProps) {
+export function ClientTable({
+  clients,
+  canEdit,
+  canToggleActive,
+  onEdit,
+  onToggleActive,
+}: ClientTableProps) {
   const router = useRouter();
 
   const goToClientDetail = (clientId: string) => {
@@ -41,7 +50,7 @@ export function ClientTable({ clients, canDelete, onEdit, onDelete }: ClientTabl
           <TableHead>Teléfono</TableHead>
           <TableHead>Ciudad</TableHead>
           <TableHead>Barrio</TableHead>
-          <TableHead>Deuda total</TableHead>
+          <TableHead>Estado</TableHead>
           <TableHead className="text-right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
@@ -61,13 +70,18 @@ export function ClientTable({ clients, canDelete, onEdit, onDelete }: ClientTabl
             >
               <TableCell className="font-medium text-foreground">{client.name}</TableCell>
               <TableCell>
-                {DOCUMENT_TYPE_LABELS[client.documentType]} {client.documentNumber}
+                {CLIENT_DOCUMENT_TYPE_LABELS[client.documentType]} {client.documentNumber}
               </TableCell>
               <TableCell>{client.phone}</TableCell>
               <TableCell>{client.city}</TableCell>
               <TableCell>{client.neighborhood}</TableCell>
               <TableCell>
-                <ClientDebtBadge totalDebtBOB={client.totalDebtBOB} />
+                <Badge
+                  variant={client.isActive ? undefined : "secondary"}
+                  className={client.isActive ? ACTIVE_BADGE_CLASSES : undefined}
+                >
+                  {client.isActive ? ACTIVE_LABEL : INACTIVE_LABEL}
+                </Badge>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
@@ -82,28 +96,30 @@ export function ClientTable({ clients, canDelete, onEdit, onDelete }: ClientTabl
                   >
                     <Eye className="size-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Editar cliente"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onEdit(client);
-                    }}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  {canDelete ? (
+                  {canEdit ? (
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Eliminar cliente"
+                      aria-label="Editar cliente"
                       onClick={(event) => {
                         event.stopPropagation();
-                        onDelete(client);
+                        onEdit(client);
                       }}
                     >
-                      <Trash2 className="size-4" />
+                      <Pencil className="size-4" />
+                    </Button>
+                  ) : null}
+                  {canToggleActive ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={client.isActive ? "Desactivar cliente" : "Activar cliente"}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleActive(client);
+                      }}
+                    >
+                      <Power className="size-4" />
                     </Button>
                   ) : null}
                 </div>

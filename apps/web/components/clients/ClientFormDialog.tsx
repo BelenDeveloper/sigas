@@ -24,20 +24,19 @@ import { z } from "zod";
 
 import type { ClientInput } from "@/hooks/use-clients";
 import {
+  CLIENT_DOCUMENT_TYPES,
+  CLIENT_DOCUMENT_TYPE_LABELS,
   DEFAULT_CLIENT_CITY,
-  DOCUMENT_TYPE_LABELS,
   type Client,
-  type DocumentType,
-} from "@/lib/mocks/clients.mock";
+  type ClientDocumentType,
+} from "@/lib/client-types";
 
 const NAME_REQUIRED_MESSAGE = "El nombre es obligatorio.";
 const INVALID_EMAIL_MESSAGE = "Ingresa un correo electrónico válido.";
 
-const DOCUMENT_TYPES: DocumentType[] = ["CI", "NIT", "Passport"];
-
 const clientFormSchema = z.object({
   name: z.string().min(1, NAME_REQUIRED_MESSAGE),
-  documentType: z.enum(["CI", "NIT", "Passport"]),
+  documentType: z.enum(CLIENT_DOCUMENT_TYPES),
   documentNumber: z.string(),
   phone: z.string(),
   email: z.string().email(INVALID_EMAIL_MESSAGE).or(z.literal("")),
@@ -138,16 +137,18 @@ export function ClientFormDialog({
                 modal={false}
                 value={watch("documentType")}
                 onValueChange={(value) =>
-                  setValue("documentType", (value ?? "CI") as DocumentType)
+                  setValue("documentType", (value ?? "CI") as ClientDocumentType)
                 }
               >
                 <SelectTrigger id="client-form-document-type">
-                  <SelectValue>{() => DOCUMENT_TYPE_LABELS[watch("documentType")]}</SelectValue>
+                  <SelectValue>
+                    {() => CLIENT_DOCUMENT_TYPE_LABELS[watch("documentType")]}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {DOCUMENT_TYPES.map((documentType) => (
+                  {CLIENT_DOCUMENT_TYPES.map((documentType) => (
                     <SelectItem key={documentType} value={documentType}>
-                      {DOCUMENT_TYPE_LABELS[documentType]}
+                      {CLIENT_DOCUMENT_TYPE_LABELS[documentType]}
                     </SelectItem>
                   ))}
                 </SelectContent>

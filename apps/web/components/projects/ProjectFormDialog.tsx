@@ -25,7 +25,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { ProjectInput } from "@/hooks/use-projects";
-import type { Client } from "@/lib/mocks/clients.mock";
+import type { Client } from "@/lib/client-types";
 import {
   PROJECT_CATEGORIES,
   PROJECT_CATEGORY_LABELS,

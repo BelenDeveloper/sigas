@@ -1,26 +1,31 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/ui/badge";
 import { Button } from "@repo/ui/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { useClients } from "@/hooks/use-clients";
-import { DOCUMENT_TYPE_LABELS } from "@/lib/mocks/clients.mock";
-
-import { ClientDebtBadge } from "./ClientDebtBadge";
-import { ClientSaleHistory } from "./ClientSaleHistory";
+import { CLIENT_DOCUMENT_TYPE_LABELS } from "@/lib/client-types";
 
 const CLIENT_NOT_FOUND_MESSAGE = "No se encontró el cliente solicitado.";
 const CLIENTS_ROUTE = "/clients";
+const ACTIVE_LABEL = "Activo";
+const INACTIVE_LABEL = "Inactivo";
+const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
 
 interface ClientDetailPageProps {
   clientId: string;
 }
 
 export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
-  const { getClientById, getSalesByClientId } = useClients();
+  const { getClientById, isLoading } = useClients();
   const client = getClientById(clientId);
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!client) {
     return (
@@ -39,8 +44,6 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
     );
   }
 
-  const sales = getSalesByClientId(clientId);
-
   return (
     <div className="flex flex-col gap-6">
       <Button
@@ -56,13 +59,18 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <CardTitle className="text-xl">{client.name}</CardTitle>
-          <ClientDebtBadge totalDebtBOB={client.totalDebtBOB} />
+          <Badge
+            variant={client.isActive ? undefined : "secondary"}
+            className={client.isActive ? ACTIVE_BADGE_CLASSES : undefined}
+          >
+            {client.isActive ? ACTIVE_LABEL : INACTIVE_LABEL}
+          </Badge>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Documento</span>
             <span className="text-sm text-foreground">
-              {DOCUMENT_TYPE_LABELS[client.documentType]} {client.documentNumber}
+              {CLIENT_DOCUMENT_TYPE_LABELS[client.documentType]} {client.documentNumber}
             </span>
           </div>
           <div className="flex flex-col">
@@ -87,8 +95,6 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
           </div>
         </CardContent>
       </Card>
-
-      <ClientSaleHistory sales={sales} />
     </div>
   );
 }

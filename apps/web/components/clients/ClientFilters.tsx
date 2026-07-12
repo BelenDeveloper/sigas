@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { Switch } from "@repo/ui/components/ui/switch";
 
 import { ALL_CITIES_OPTION, type ClientFilterState } from "@/hooks/use-clients";
 
@@ -43,15 +42,6 @@ export function ClientFilters({ filters, onFiltersChange, cities }: ClientFilter
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="flex items-center gap-2 pb-2">
-        <Switch
-          id="client-filter-pending-debt"
-          checked={filters.hasPendingDebt}
-          onCheckedChange={(hasPendingDebt) => onFiltersChange({ hasPendingDebt })}
-        />
-        <Label htmlFor="client-filter-pending-debt">Con deuda pendiente</Label>
       </div>
     </div>
   );

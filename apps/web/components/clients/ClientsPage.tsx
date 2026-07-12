@@ -8,26 +8,33 @@ import { useState } from "react";
 
 import { useClients } from "@/hooks/use-clients";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import type { Client } from "@/lib/mocks/clients.mock";
+import type { Client } from "@/lib/client-types";
+import { hasModulePermission } from "@/lib/permission-helpers";
 
-import { ClientDeleteAlertDialog } from "./ClientDeleteAlertDialog";
 import { ClientFilters } from "./ClientFilters";
 import { ClientFormDialog } from "./ClientFormDialog";
 import { ClientTable } from "./ClientTable";
 
+const CLIENTS_MODULE = "clients";
 const ADMIN_ROLE = "admin";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
 
 export function ClientsPage() {
   const authUser = useAtomValue(authUserAtom);
-  const isAdmin = authUser?.role === ADMIN_ROLE;
+  const canViewClients = hasModulePermission(authUser, CLIENTS_MODULE, "canView");
+  const canCreateClient = hasModulePermission(authUser, CLIENTS_MODULE, "canCreate");
+  const canEditClient = hasModulePermission(authUser, CLIENTS_MODULE, "canEdit");
+  const canToggleActive = authUser?.role === ADMIN_ROLE;
 
-  const { clients, cities, filters, setFilters, createClient, updateClient, deleteClient } =
+  const { clients, cities, filters, setFilters, createClient, updateClient, toggleClientActive } =
     useClients();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [clientPendingDelete, setClientPendingDelete] = useState<Client | null>(null);
+
+  if (!canViewClients) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
 
   const handleNewClient = () => {
     setEditingClient(null);
@@ -39,11 +46,6 @@ export function ClientsPage() {
     setFormOpen(true);
   };
 
-  const handleDeleteClient = (client: Client) => {
-    setClientPendingDelete(client);
-    setDeleteDialogOpen(true);
-  };
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -53,7 +55,7 @@ export function ClientsPage() {
           value={filters.searchTerm}
           onChange={(event) => setFilters({ searchTerm: event.target.value })}
         />
-        {isAdmin ? (
+        {canCreateClient ? (
           <Button
             className="bg-brand text-brand-foreground hover:bg-brand/90"
             onClick={handleNewClient}
@@ -68,9 +70,10 @@ export function ClientsPage() {
 
       <ClientTable
         clients={clients}
-        canDelete={isAdmin}
+        canEdit={canEditClient}
+        canToggleActive={canToggleActive}
         onEdit={handleEditClient}
-        onDelete={handleDeleteClient}
+        onToggleActive={(client) => toggleClientActive(client.id)}
       />
 
       <ClientFormDialog
@@ -79,13 +82,6 @@ export function ClientsPage() {
         client={editingClient}
         onCreate={createClient}
         onUpdate={updateClient}
-      />
-
-      <ClientDeleteAlertDialog
-        client={clientPendingDelete}
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={deleteClient}
       />
     </div>
   );

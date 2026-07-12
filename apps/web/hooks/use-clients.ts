@@ -2,26 +2,20 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  DEFAULT_CLIENT_CITY,
-  MOCK_CLIENTS,
-  MOCK_CLIENT_SALES,
-  type Client,
-  type ClientSale,
-  type DocumentType,
-} from "@/lib/mocks/clients.mock";
+import type { Client, ClientDocumentType } from "@/lib/client-types";
+import { trpc } from "@/lib/trpc/client";
 
 export const ALL_CITIES_OPTION = "all";
+const DEFAULT_DOCUMENT_TYPE: ClientDocumentType = "CI";
 
 export interface ClientFilterState {
   searchTerm: string;
   city: string;
-  hasPendingDebt: boolean;
 }
 
 export interface ClientInput {
   name: string;
-  documentType: DocumentType;
+  documentType: ClientDocumentType;
   documentNumber: string;
   phone: string;
   email: string;
@@ -33,7 +27,6 @@ export interface ClientInput {
 const DEFAULT_FILTERS: ClientFilterState = {
   searchTerm: "",
   city: ALL_CITIES_OPTION,
-  hasPendingDebt: false,
 };
 
 interface UseClientsResult {
@@ -43,83 +36,108 @@ interface UseClientsResult {
   setFilters: (filters: Partial<ClientFilterState>) => void;
   createClient: (input: ClientInput) => void;
   updateClient: (clientId: string, input: ClientInput) => void;
-  deleteClient: (clientId: string) => void;
+  toggleClientActive: (clientId: string) => void;
   getClientById: (clientId: string) => Client | undefined;
-  getSalesByClientId: (clientId: string) => ClientSale[];
+  isLoading: boolean;
+}
+
+function toClientInput(input: ClientInput) {
+  return {
+    name: input.name,
+    documentType: input.documentType,
+    documentNumber: input.documentNumber || undefined,
+    phone: input.phone || undefined,
+    email: input.email || undefined,
+    address: input.address || undefined,
+    neighborhood: input.neighborhood || undefined,
+    city: input.city || undefined,
+  };
 }
 
 export function useClients(): UseClientsResult {
-  const [clients, setClients] = useState<Client[]>(MOCK_CLIENTS);
+  const utils = trpc.useUtils();
+
   const [filters, setFiltersState] = useState<ClientFilterState>(DEFAULT_FILTERS);
 
   const setFilters = (partialFilters: Partial<ClientFilterState>) => {
     setFiltersState((previous) => ({ ...previous, ...partialFilters }));
   };
 
+  const { data: rawClients } = trpc.clients.list.useQuery({
+    search: filters.searchTerm || undefined,
+    city: filters.city !== ALL_CITIES_OPTION ? filters.city : undefined,
+  });
+
+  const { data: rawAllClients } = trpc.clients.list.useQuery({});
+
+  const invalidateClients = () => void utils.clients.list.invalidate();
+
+  const createMutation = trpc.clients.create.useMutation({ onSuccess: invalidateClients });
+  const updateMutation = trpc.clients.update.useMutation({ onSuccess: invalidateClients });
+  const toggleActiveMutation = trpc.clients.toggleActive.useMutation({ onSuccess: invalidateClients });
+
+  const toClient = (client: {
+    id: string;
+    name: string;
+    documentType: ClientDocumentType | null;
+    documentNumber: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    neighborhood: string | null;
+    city: string;
+    isActive: boolean;
+  }): Client => ({
+    id: client.id,
+    name: client.name,
+    documentType: client.documentType ?? DEFAULT_DOCUMENT_TYPE,
+    documentNumber: client.documentNumber ?? "",
+    phone: client.phone ?? "",
+    email: client.email ?? "",
+    address: client.address ?? "",
+    neighborhood: client.neighborhood ?? "",
+    city: client.city,
+    isActive: client.isActive,
+  });
+
+  const clients = useMemo(() => (rawClients ?? []).map(toClient), [rawClients]);
+  const allClients = useMemo(() => (rawAllClients ?? []).map(toClient), [rawAllClients]);
+
   const cities = useMemo(() => {
-    const uniqueCities = new Set(clients.map((client) => client.city));
+    const uniqueCities = new Set(allClients.map((client) => client.city));
     return Array.from(uniqueCities).sort();
-  }, [clients]);
+  }, [allClients]);
 
-  const filteredClients = useMemo(() => {
-    const normalizedSearchTerm = filters.searchTerm.trim().toLowerCase();
-
-    return clients.filter((client) => {
-      if (filters.hasPendingDebt && client.totalDebtBOB <= 0) {
-        return false;
-      }
-
-      if (filters.city !== ALL_CITIES_OPTION && client.city !== filters.city) {
-        return false;
-      }
-
-      if (!normalizedSearchTerm) {
-        return true;
-      }
-
-      return (
-        client.name.toLowerCase().includes(normalizedSearchTerm) ||
-        client.documentNumber.toLowerCase().includes(normalizedSearchTerm)
-      );
-    });
-  }, [clients, filters]);
-
-  const getClientById = (clientId: string) => clients.find((client) => client.id === clientId);
-
-  const getSalesByClientId = (clientId: string) =>
-    MOCK_CLIENT_SALES.filter((sale) => sale.clientId === clientId);
+  const getClientById = (clientId: string) =>
+    allClients.find((client) => client.id === clientId);
 
   const createClient = (input: ClientInput) => {
-    const newClient: Client = {
-      ...input,
-      id: crypto.randomUUID(),
-      totalDebtBOB: 0,
-    };
-
-    setClients((previous) => [...previous, newClient]);
+    createMutation.mutate(toClientInput(input));
   };
 
   const updateClient = (clientId: string, input: ClientInput) => {
-    setClients((previous) =>
-      previous.map((client) => (client.id === clientId ? { ...client, ...input } : client)),
-    );
+    const currentClient = getClientById(clientId);
+
+    updateMutation.mutate({
+      id: clientId,
+      ...toClientInput(input),
+      isActive: currentClient?.isActive ?? true,
+    });
   };
 
-  const deleteClient = (clientId: string) => {
-    setClients((previous) => previous.filter((client) => client.id !== clientId));
+  const toggleClientActive = (clientId: string) => {
+    toggleActiveMutation.mutate({ id: clientId });
   };
 
   return {
-    clients: filteredClients,
+    clients,
     cities,
     filters,
     setFilters,
     createClient,
     updateClient,
-    deleteClient,
+    toggleClientActive,
     getClientById,
-    getSalesByClientId,
+    isLoading: rawAllClients === undefined,
   };
 }
-
-export { DEFAULT_CLIENT_CITY };
