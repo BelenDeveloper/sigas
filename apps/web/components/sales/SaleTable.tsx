@@ -12,9 +12,8 @@ import {
 import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import type { SaleListItem } from "@/hooks/use-sales";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import { getSalePaidBOB, getSalePendingBOB, getSaleTotalBOB } from "@/lib/sale-helpers";
-import type { Sale } from "@/lib/mocks/sales.mock";
 
 import { SaleStatusBadge } from "./SaleStatusBadge";
 
@@ -30,7 +29,7 @@ function formatSaleDate(isoDate: string): string {
 }
 
 interface SaleTableProps {
-  sales: Sale[];
+  sales: SaleListItem[];
 }
 
 export function SaleTable({ sales }: SaleTableProps) {
@@ -63,43 +62,37 @@ export function SaleTable({ sales }: SaleTableProps) {
             </TableCell>
           </TableRow>
         ) : (
-          sales.map((sale) => {
-            const totalBOB = getSaleTotalBOB(sale);
-            const paidBOB = getSalePaidBOB(sale);
-            const pendingBOB = getSalePendingBOB(sale);
-
-            return (
-              <TableRow
-                key={sale.id}
-                className="cursor-pointer"
-                onClick={() => goToSaleDetail(sale.id)}
-              >
-                <TableCell className="font-mono text-xs">{sale.code}</TableCell>
-                <TableCell>{formatSaleDate(sale.date)}</TableCell>
-                <TableCell className="font-medium text-foreground">{sale.clientName}</TableCell>
-                <TableCell>{sale.items.length}</TableCell>
-                <TableCell>{formatCurrencyBOB(totalBOB)}</TableCell>
-                <TableCell>{formatCurrencyBOB(paidBOB)}</TableCell>
-                <TableCell>{formatCurrencyBOB(pendingBOB)}</TableCell>
-                <TableCell>
-                  <SaleStatusBadge type={sale.type} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Ver venta"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      goToSaleDetail(sale.id);
-                    }}
-                  >
-                    <Eye className="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })
+          sales.map((sale) => (
+            <TableRow
+              key={sale.id}
+              className="cursor-pointer"
+              onClick={() => goToSaleDetail(sale.id)}
+            >
+              <TableCell className="font-mono text-xs">{sale.code}</TableCell>
+              <TableCell>{formatSaleDate(sale.date)}</TableCell>
+              <TableCell className="font-medium text-foreground">{sale.clientName}</TableCell>
+              <TableCell>{sale.itemCount}</TableCell>
+              <TableCell>{formatCurrencyBOB(sale.totalBOB)}</TableCell>
+              <TableCell>{formatCurrencyBOB(sale.paidBOB)}</TableCell>
+              <TableCell>{formatCurrencyBOB(sale.pendingBOB)}</TableCell>
+              <TableCell>
+                <SaleStatusBadge status={sale.status} />
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Ver venta"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goToSaleDetail(sale.id);
+                  }}
+                >
+                  <Eye className="size-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))
         )}
       </TableBody>
     </Table>

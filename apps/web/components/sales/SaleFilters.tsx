@@ -11,10 +11,9 @@ import {
 } from "@repo/ui/components/ui/select";
 
 import { ALL_SALE_TYPES_OPTION, type SaleFilterState } from "@/hooks/use-sales";
-import { SALE_TYPE_LABELS, type SaleType } from "@/lib/mocks/sales.mock";
+import { SALE_TYPES, SALE_TYPE_LABELS } from "@/lib/sale-types";
 
 const ALL_SALE_TYPES_LABEL = "Todos los tipos";
-const SALE_TYPES: SaleType[] = ["quotation", "order", "sale", "return"];
 
 interface SaleFiltersProps {
   filters: SaleFilterState;
@@ -36,7 +35,7 @@ export function SaleFilters({ filters, onFiltersChange }: SaleFiltersProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="sale-filter-type">Estado</Label>
+        <Label htmlFor="sale-filter-type">Tipo</Label>
         <Select
           value={filters.type}
           onValueChange={(type) =>

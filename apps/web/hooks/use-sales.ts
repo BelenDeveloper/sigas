@@ -1,22 +1,18 @@
 "use client";
 
-import { useAtom } from "jotai";
 import { useMemo, useState } from "react";
 
-import { salesAtom } from "@/lib/atoms/sales.atom";
-import {
-  type Sale,
-  type SaleItem,
-  type SalePayment,
-  type SaleType,
-} from "@/lib/mocks/sales.mock";
 import type { PaymentMethod } from "@/lib/payment-method";
+import type { SaleStatus, SaleType } from "@/lib/sale-types";
+import { trpc } from "@/lib/trpc/client";
 
 export const ALL_SALE_TYPES_OPTION = "all";
+export const ALL_SALE_STATUSES_OPTION = "all";
 
 export interface SaleFilterState {
   searchTerm: string;
   type: SaleType | typeof ALL_SALE_TYPES_OPTION;
+  status: SaleStatus | typeof ALL_SALE_STATUSES_OPTION;
   dateFrom: string;
   dateTo: string;
 }
@@ -36,128 +32,226 @@ export interface SalePaymentInput {
 
 export interface SaleInput {
   clientId: string;
-  clientName: string;
   type: SaleType;
   date: string;
   notes: string;
+  discountBOB: number;
   items: SaleItemInput[];
   payments: SalePaymentInput[];
+}
+
+export interface SaleListItem {
+  id: string;
+  code: string;
+  date: string;
+  clientId: string | null;
+  clientName: string;
+  type: SaleType;
+  status: SaleStatus;
+  itemCount: number;
+  totalBOB: number;
+  paidBOB: number;
+  pendingBOB: number;
+}
+
+export interface SaleItemDetail {
+  id: string;
+  productId: string;
+  productName: string;
+  productSku: string;
+  quantity: number;
+  unitPriceBOB: number;
+  subtotalBOB: number;
+  notes: string;
+}
+
+export interface SalePaymentDetail {
+  id: string;
+  amountBOB: number;
+  paymentMethod: PaymentMethod;
+  accountDestination: string;
+  paidAt: string;
+  notes: string;
+}
+
+export interface SaleDetail {
+  id: string;
+  code: string;
+  type: SaleType;
+  status: SaleStatus;
+  clientId: string | null;
+  saleDate: string;
+  notes: string;
+  subtotalBOB: number;
+  discountBOB: number;
+  totalBOB: number;
+  paidBOB: number;
+  pendingBOB: number;
+  items: SaleItemDetail[];
+  payments: SalePaymentDetail[];
 }
 
 const DEFAULT_FILTERS: SaleFilterState = {
   searchTerm: "",
   type: ALL_SALE_TYPES_OPTION,
+  status: ALL_SALE_STATUSES_OPTION,
   dateFrom: "",
   dateTo: "",
 };
 
-const SALE_TYPE_CODE_PREFIXES: Record<SaleType, string> = {
-  quotation: "COT",
-  order: "PED",
-  sale: "VTA",
-  return: "DEV",
-};
-
-const CODE_SEQUENCE_LENGTH = 4;
-
-function generateSaleCode(sales: Sale[], type: SaleType): string {
-  const prefix = SALE_TYPE_CODE_PREFIXES[type];
-  const matchingNumbers = sales
-    .filter((sale) => sale.code.startsWith(`${prefix}-`))
-    .map((sale) => Number(sale.code.slice(prefix.length + 1)))
-    .filter((value) => !Number.isNaN(value));
-
-  const nextNumber = matchingNumbers.length > 0 ? Math.max(...matchingNumbers) + 1 : 1;
-
-  return `${prefix}-${String(nextNumber).padStart(CODE_SEQUENCE_LENGTH, "0")}`;
-}
-
-function toSaleItem(input: SaleItemInput): SaleItem {
-  return { ...input, id: crypto.randomUUID() };
-}
-
-function toSalePayment(input: SalePaymentInput, date: string): SalePayment {
-  return { ...input, id: crypto.randomUUID(), date };
+function toSalePaymentMutationInput(saleId: string, payment: SalePaymentInput) {
+  return {
+    saleId,
+    amount: payment.amountBOB,
+    paymentMethod: payment.method,
+    accountDestination: payment.accountDestination || undefined,
+  };
 }
 
 interface UseSalesResult {
-  sales: Sale[];
+  sales: SaleListItem[];
   filters: SaleFilterState;
   setFilters: (filters: Partial<SaleFilterState>) => void;
-  createSale: (input: SaleInput) => Sale;
-  getSaleById: (saleId: string) => Sale | undefined;
-  addPayment: (saleId: string, payment: SalePaymentInput) => void;
+  createSale: (input: SaleInput) => Promise<{ id: string }>;
+  isLoading: boolean;
 }
 
 export function useSales(): UseSalesResult {
-  const [allSales, setAllSales] = useAtom(salesAtom);
+  const utils = trpc.useUtils();
+
   const [filters, setFiltersState] = useState<SaleFilterState>(DEFAULT_FILTERS);
 
   const setFilters = (partialFilters: Partial<SaleFilterState>) => {
     setFiltersState((previous) => ({ ...previous, ...partialFilters }));
   };
 
-  const filteredSales = useMemo(() => {
-    const normalizedSearchTerm = filters.searchTerm.trim().toLowerCase();
+  const { data: rawSales } = trpc.sales.list.useQuery({
+    search: filters.searchTerm || undefined,
+    type: filters.type !== ALL_SALE_TYPES_OPTION ? filters.type : undefined,
+    status: filters.status !== ALL_SALE_STATUSES_OPTION ? filters.status : undefined,
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
+  });
 
-    return allSales.filter((sale) => {
-      if (filters.type !== ALL_SALE_TYPES_OPTION && sale.type !== filters.type) {
-        return false;
-      }
+  const invalidateSales = () => void utils.sales.list.invalidate();
 
-      if (filters.dateFrom && sale.date < filters.dateFrom) {
-        return false;
-      }
+  const createMutation = trpc.sales.create.useMutation({ onSuccess: invalidateSales });
+  const addPaymentMutation = trpc.sales.addPayment.useMutation({ onSuccess: invalidateSales });
 
-      if (filters.dateTo && sale.date > filters.dateTo) {
-        return false;
-      }
+  const sales = useMemo<SaleListItem[]>(
+    () =>
+      (rawSales ?? []).map((sale) => ({
+        id: sale.id,
+        code: sale.code,
+        date: sale.saleDate,
+        clientId: sale.clientId,
+        clientName: sale.clientName ?? "",
+        type: sale.type,
+        status: sale.status,
+        itemCount: sale.itemCount,
+        totalBOB: Number(sale.total),
+        paidBOB: sale.totalPaid,
+        pendingBOB: sale.totalPending,
+      })),
+    [rawSales],
+  );
 
-      if (!normalizedSearchTerm) {
-        return true;
-      }
-
-      return sale.clientName.toLowerCase().includes(normalizedSearchTerm);
-    });
-  }, [allSales, filters]);
-
-  const getSaleById = (saleId: string) => allSales.find((sale) => sale.id === saleId);
-
-  const createSale = (input: SaleInput): Sale => {
-    const newSale: Sale = {
-      id: crypto.randomUUID(),
-      code: generateSaleCode(allSales, input.type),
-      date: input.date,
-      clientId: input.clientId,
-      clientName: input.clientName,
+  const createSale = async (input: SaleInput): Promise<{ id: string }> => {
+    const sale = await createMutation.mutateAsync({
       type: input.type,
-      notes: input.notes,
-      items: input.items.map(toSaleItem),
-      payments: input.payments.map((payment) => toSalePayment(payment, input.date)),
-    };
+      clientId: input.clientId || undefined,
+      saleDate: input.date || undefined,
+      notes: input.notes || undefined,
+      discount: input.discountBOB || undefined,
+      items: input.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPriceBOB,
+      })),
+    });
 
-    setAllSales((previous) => [newSale, ...previous]);
-    return newSale;
-  };
+    for (const payment of input.payments) {
+      await addPaymentMutation.mutateAsync(toSalePaymentMutationInput(sale.id, payment));
+    }
 
-  const addPayment = (saleId: string, payment: SalePaymentInput) => {
-    const today = new Date().toISOString().slice(0, 10);
-
-    setAllSales((previous) =>
-      previous.map((sale) =>
-        sale.id === saleId
-          ? { ...sale, payments: [...sale.payments, toSalePayment(payment, today)] }
-          : sale,
-      ),
-    );
+    return sale;
   };
 
   return {
-    sales: filteredSales,
+    sales,
     filters,
     setFilters,
     createSale,
-    getSaleById,
-    addPayment,
+    isLoading: rawSales === undefined,
   };
+}
+
+interface UseSaleResult {
+  sale: SaleDetail | undefined;
+  isLoading: boolean;
+  addPayment: (payment: SalePaymentInput) => void;
+  cancelSale: (reason: string) => void;
+}
+
+export function useSale(saleId: string): UseSaleResult {
+  const utils = trpc.useUtils();
+
+  const { data: rawSale, isLoading } = trpc.sales.get.useQuery({ id: saleId });
+
+  const invalidateSale = () => {
+    void utils.sales.get.invalidate({ id: saleId });
+    void utils.sales.list.invalidate();
+  };
+
+  const addPaymentMutation = trpc.sales.addPayment.useMutation({ onSuccess: invalidateSale });
+  const cancelMutation = trpc.sales.cancel.useMutation({ onSuccess: invalidateSale });
+
+  const sale = useMemo<SaleDetail | undefined>(() => {
+    if (!rawSale) {
+      return undefined;
+    }
+
+    return {
+      id: rawSale.id,
+      code: rawSale.code,
+      type: rawSale.type,
+      status: rawSale.status,
+      clientId: rawSale.clientId,
+      saleDate: rawSale.saleDate,
+      notes: rawSale.notes ?? "",
+      subtotalBOB: Number(rawSale.subtotal),
+      discountBOB: Number(rawSale.discount),
+      totalBOB: Number(rawSale.total),
+      paidBOB: rawSale.totalPaid,
+      pendingBOB: rawSale.totalPending,
+      items: rawSale.items.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        productSku: item.productSku,
+        quantity: Number(item.quantity),
+        unitPriceBOB: Number(item.unitPrice),
+        subtotalBOB: Number(item.subtotal),
+        notes: item.notes ?? "",
+      })),
+      payments: rawSale.payments.map((payment) => ({
+        id: payment.id,
+        amountBOB: Number(payment.amount),
+        paymentMethod: payment.paymentMethod,
+        accountDestination: payment.accountDestination ?? "",
+        paidAt: String(payment.paidAt),
+        notes: payment.notes ?? "",
+      })),
+    };
+  }, [rawSale]);
+
+  const addPayment = (payment: SalePaymentInput) => {
+    addPaymentMutation.mutate(toSalePaymentMutationInput(saleId, payment));
+  };
+
+  const cancelSale = (reason: string) => {
+    cancelMutation.mutate({ id: saleId, reason });
+  };
+
+  return { sale, isLoading, addPayment, cancelSale };
 }

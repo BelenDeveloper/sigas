@@ -1,18 +1,19 @@
 import { Badge } from "@repo/ui/components/ui/badge";
 
-import { SALE_TYPE_LABELS, type SaleType } from "@/lib/mocks/sales.mock";
+import { SALE_STATUS_LABELS, type SaleStatus } from "@/lib/sale-types";
 
-const SALE_STATUS_BADGE_CLASSES: Record<SaleType, string> = {
-  quotation: "bg-muted text-muted-foreground",
-  order: "bg-blue-100 text-blue-800",
-  sale: "bg-emerald-100 text-emerald-800",
-  return: "bg-red-100 text-red-800",
+const SALE_STATUS_BADGE_CLASSES: Record<SaleStatus, string> = {
+  draft: "bg-muted text-muted-foreground",
+  confirmed: "bg-blue-100 text-blue-800",
+  partial: "bg-amber-100 text-amber-800",
+  paid: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-red-100 text-red-800",
 };
 
 interface SaleStatusBadgeProps {
-  type: SaleType;
+  status: SaleStatus;
 }
 
-export function SaleStatusBadge({ type }: SaleStatusBadgeProps) {
-  return <Badge className={SALE_STATUS_BADGE_CLASSES[type]}>{SALE_TYPE_LABELS[type]}</Badge>;
+export function SaleStatusBadge({ status }: SaleStatusBadgeProps) {
+  return <Badge className={SALE_STATUS_BADGE_CLASSES[status]}>{SALE_STATUS_LABELS[status]}</Badge>;
 }

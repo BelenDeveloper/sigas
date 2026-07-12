@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
+import { Textarea } from "@repo/ui/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -19,21 +20,28 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { useAtomValue } from "jotai";
+import { ArrowLeft, Ban, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { useSales, type SalePaymentInput } from "@/hooks/use-sales";
+import { useSale, type SalePaymentInput } from "@/hooks/use-sales";
+import { authUserAtom } from "@/lib/atoms/auth.atom";
 import { formatCurrencyBOB } from "@/lib/format-currency";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
-import { getSalePaidBOB, getSalePendingBOB, getSaleTotalBOB } from "@/lib/sale-helpers";
+import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { SaleStatusBadge } from "./SaleStatusBadge";
 import { SalePdfButton } from "./SalePdfButton";
 
+const SALES_MODULE = "sales";
+const ADMIN_ROLE = "admin";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
 const SALE_NOT_FOUND_MESSAGE = "No se encontró la venta solicitada.";
 const SALES_ROUTE = "/sales";
 const DATE_LOCALE = "es-BO";
+const CANCELLED_STATUS = "cancelled";
+const CANCEL_REASON_REQUIRED_MESSAGE = "Ingresa el motivo de la cancelación.";
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = "cash";
 const EMPTY_PAYMENT: SalePaymentInput = {
@@ -55,11 +63,26 @@ interface SaleDetailPageProps {
 }
 
 export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
-  const { getSaleById, addPayment } = useSales();
-  const sale = getSaleById(saleId);
+  const authUser = useAtomValue(authUserAtom);
+  const canViewSales = hasModulePermission(authUser, SALES_MODULE, "canView");
+  const canEditSale = hasModulePermission(authUser, SALES_MODULE, "canEdit");
+  const isAdmin = authUser?.role === ADMIN_ROLE;
+
+  const { sale, isLoading, addPayment, cancelSale } = useSale(saleId);
 
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [newPayment, setNewPayment] = useState<SalePaymentInput>(EMPTY_PAYMENT);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  if (!canViewSales) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!sale) {
     return (
@@ -73,14 +96,24 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
     );
   }
 
-  const totalBOB = getSaleTotalBOB(sale);
-  const paidBOB = getSalePaidBOB(sale);
-  const pendingBOB = getSalePendingBOB(sale);
+  const canCancelSale = isAdmin && sale.status !== CANCELLED_STATUS;
 
   const handleConfirmPayment = () => {
-    addPayment(sale.id, newPayment);
+    addPayment(newPayment);
     setNewPayment(EMPTY_PAYMENT);
     setIsAddingPayment(false);
+  };
+
+  const handleConfirmCancel = () => {
+    if (!cancelReason.trim()) {
+      setCancelError(CANCEL_REASON_REQUIRED_MESSAGE);
+      return;
+    }
+
+    cancelSale(cancelReason);
+    setCancelError(null);
+    setCancelReason("");
+    setIsCancelling(false);
   };
 
   return (
@@ -97,19 +130,56 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
             <CardTitle className="text-xl">{sale.code}</CardTitle>
-            <p className="text-sm text-muted-foreground">{sale.clientName}</p>
           </div>
-          <SaleStatusBadge type={sale.type} />
+          <div className="flex items-center gap-2">
+            <SaleStatusBadge status={sale.status} />
+            {canCancelSale && !isCancelling ? (
+              <Button variant="outline" size="sm" onClick={() => setIsCancelling(true)}>
+                <Ban className="size-4" />
+                Cancelar venta
+              </Button>
+            ) : null}
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Fecha</span>
-            <span className="text-sm text-foreground">{formatDate(sale.date)}</span>
+            <span className="text-sm text-foreground">{formatDate(sale.saleDate)}</span>
           </div>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Notas</span>
             <span className="text-sm text-foreground">{sale.notes || "—"}</span>
           </div>
+
+          {isCancelling ? (
+            <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:col-span-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="cancel-reason">Motivo de la cancelación</Label>
+                <Textarea
+                  id="cancel-reason"
+                  rows={2}
+                  value={cancelReason}
+                  onChange={(event) => setCancelReason(event.target.value)}
+                />
+                {cancelError ? <p className="text-sm text-destructive">{cancelError}</p> : null}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="destructive" onClick={handleConfirmCancel}>
+                  Confirmar cancelación
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCancelling(false);
+                    setCancelError(null);
+                    setCancelReason("");
+                  }}
+                >
+                  Volver
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -133,7 +203,7 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
                   <TableCell className="font-medium text-foreground">{item.productName}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
                   <TableCell>{formatCurrencyBOB(item.unitPriceBOB)}</TableCell>
-                  <TableCell>{formatCurrencyBOB(item.quantity * item.unitPriceBOB)}</TableCell>
+                  <TableCell>{formatCurrencyBOB(item.subtotalBOB)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -144,7 +214,7 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Pagos</CardTitle>
-          {!isAddingPayment ? (
+          {canEditSale && !isAddingPayment ? (
             <Button variant="outline" size="sm" onClick={() => setIsAddingPayment(true)}>
               <Plus className="size-4" />
               Agregar pago
@@ -164,9 +234,9 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
             <TableBody>
               {sale.payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell>{formatDate(payment.date)}</TableCell>
+                  <TableCell>{formatDate(payment.paidAt)}</TableCell>
                   <TableCell>{formatCurrencyBOB(payment.amountBOB)}</TableCell>
-                  <TableCell>{PAYMENT_METHOD_LABELS[payment.method]}</TableCell>
+                  <TableCell>{PAYMENT_METHOD_LABELS[payment.paymentMethod]}</TableCell>
                   <TableCell>{payment.accountDestination || "—"}</TableCell>
                 </TableRow>
               ))}
@@ -238,10 +308,10 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
           ) : null}
 
           <div className="flex flex-col gap-1 border-t pt-4 text-sm">
-            <span className="text-muted-foreground">Total: {formatCurrencyBOB(totalBOB)}</span>
-            <span className="text-muted-foreground">Pagado: {formatCurrencyBOB(paidBOB)}</span>
+            <span className="text-muted-foreground">Total: {formatCurrencyBOB(sale.totalBOB)}</span>
+            <span className="text-muted-foreground">Pagado: {formatCurrencyBOB(sale.paidBOB)}</span>
             <span className="font-semibold text-foreground">
-              Saldo pendiente: {formatCurrencyBOB(pendingBOB)}
+              Saldo pendiente: {formatCurrencyBOB(sale.pendingBOB)}
             </span>
           </div>
         </CardContent>

@@ -12,22 +12,27 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Textarea } from "@repo/ui/components/ui/textarea";
+import { useAtomValue } from "jotai";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useClients } from "@/hooks/use-clients";
 import { useInventory } from "@/hooks/use-inventory";
 import { useSales, type SaleItemInput, type SalePaymentInput } from "@/hooks/use-sales";
-import { SALE_TYPE_LABELS, type SaleType } from "@/lib/mocks/sales.mock";
+import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { hasModulePermission } from "@/lib/permission-helpers";
+import { SALE_TYPES, SALE_TYPE_LABELS, type SaleType } from "@/lib/sale-types";
 
 import { SaleItemsEditor } from "./SaleItemsEditor";
 import { SalePaymentSection } from "./SalePaymentSection";
 
-const SALE_TYPES: SaleType[] = ["quotation", "order", "sale", "return"];
+const SALES_MODULE = "sales";
 const DEFAULT_SALE_TYPE: SaleType = "quotation";
 const SELECT_CLIENT_PLACEHOLDER = "Selecciona un cliente";
 const CLIENT_REQUIRED_MESSAGE = "Selecciona un cliente antes de continuar.";
 const ITEMS_REQUIRED_MESSAGE = "Agrega al menos un producto con cantidad válida.";
+const CREATE_ERROR_MESSAGE = "No se pudo crear la venta. Intenta nuevamente.";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para crear ventas.";
 
 function todayISODate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -35,6 +40,9 @@ function todayISODate(): string {
 
 export function SaleFormPage() {
   const router = useRouter();
+  const authUser = useAtomValue(authUserAtom);
+  const canCreateSale = hasModulePermission(authUser, SALES_MODULE, "canCreate");
+
   const { clients } = useClients();
   const { products } = useInventory();
   const { createSale } = useSales();
@@ -43,50 +51,26 @@ export function SaleFormPage() {
   const [type, setType] = useState<SaleType>(DEFAULT_SALE_TYPE);
   const [date, setDate] = useState(todayISODate());
   const [notes, setNotes] = useState("");
+  const [discountBOB, setDiscountBOB] = useState(0);
   const [items, setItems] = useState<SaleItemInput[]>([]);
   const [payments, setPayments] = useState<SalePaymentInput[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const totalBOB = items.reduce((sum, item) => sum + item.quantity * item.unitPriceBOB, 0);
-  const selectedClient = clients.find((client) => client.id === clientId);
+  if (!canCreateSale) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
 
-  const hasValidItems = items.length > 0 && items.every((item) => item.productId && item.quantity > 0);
+  const subtotalBOB = items.reduce((sum, item) => sum + item.quantity * item.unitPriceBOB, 0);
+  const totalBOB = subtotalBOB - discountBOB;
 
-  const saveSale = () => {
-    if (!selectedClient) {
-      return null;
-    }
-
-    const createdSale = createSale({
-      clientId: selectedClient.id,
-      clientName: selectedClient.name,
-      type,
-      date,
-      notes,
-      items,
-      payments: type === "sale" ? payments : [],
-    });
-
-    return createdSale;
-  };
-
-  const handleSaveDraft = () => {
+  const handleSave = async () => {
     if (!clientId) {
       setErrorMessage(CLIENT_REQUIRED_MESSAGE);
       return;
     }
 
-    const createdSale = saveSale();
-    if (createdSale) {
-      router.push(`/sales/${createdSale.id}`);
-    }
-  };
-
-  const handleConfirm = () => {
-    if (!clientId) {
-      setErrorMessage(CLIENT_REQUIRED_MESSAGE);
-      return;
-    }
+    const hasValidItems = items.length > 0 && items.every((item) => item.productId && item.quantity > 0);
 
     if (!hasValidItems) {
       setErrorMessage(ITEMS_REQUIRED_MESSAGE);
@@ -94,9 +78,23 @@ export function SaleFormPage() {
     }
 
     setErrorMessage(null);
-    const createdSale = saveSale();
-    if (createdSale) {
+    setIsSaving(true);
+
+    try {
+      const createdSale = await createSale({
+        clientId,
+        type,
+        date,
+        notes,
+        discountBOB,
+        items,
+        payments: type === "sale" ? payments : [],
+      });
+
       router.push(`/sales/${createdSale.id}`);
+    } catch {
+      setErrorMessage(CREATE_ERROR_MESSAGE);
+      setIsSaving(false);
     }
   };
 
@@ -112,7 +110,7 @@ export function SaleFormPage() {
             <Select value={clientId} onValueChange={(value) => setClientId(value ?? "")}>
               <SelectTrigger id="sale-form-client">
                 <SelectValue>
-                  {() => selectedClient?.name ?? SELECT_CLIENT_PLACEHOLDER}
+                  {() => clients.find((client) => client.id === clientId)?.name ?? SELECT_CLIENT_PLACEHOLDER}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -148,6 +146,18 @@ export function SaleFormPage() {
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="sale-form-discount">Descuento (Bs.)</Label>
+            <Input
+              id="sale-form-discount"
+              type="number"
+              step="0.01"
+              min={0}
+              value={discountBOB}
+              onChange={(event) => setDiscountBOB(Number(event.target.value))}
             />
           </div>
 
@@ -190,14 +200,12 @@ export function SaleFormPage() {
       {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
 
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={handleSaveDraft}>
-          Guardar borrador
-        </Button>
         <Button
-          onClick={handleConfirm}
+          onClick={handleSave}
+          disabled={isSaving}
           className="bg-brand text-brand-foreground hover:bg-brand/90"
         >
-          Confirmar
+          Crear venta
         </Button>
       </div>
     </div>
