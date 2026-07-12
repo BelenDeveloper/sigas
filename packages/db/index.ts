@@ -1,5 +1,7 @@
 export * from "./client.js";
 export * as schema from "./schema/index.js";
+export type { Client, ClientDocumentType, NewClient } from "./schema/clients.js";
+export { CLIENT_DOCUMENT_TYPES } from "./schema/clients.js";
 export type {
   Company,
   CompanyUserAccess,
