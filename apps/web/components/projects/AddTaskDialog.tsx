@@ -24,7 +24,7 @@ import { z } from "zod";
 
 import type { TaskInput } from "@/hooks/use-projects";
 import { getStageByKey, PROJECT_STAGES, type ProjectStageKey } from "@/lib/constants/project-stages";
-import { MOCK_USERS } from "@/lib/mocks/users.mock";
+import type { AdminUser } from "@/lib/user-permissions";
 
 const DESCRIPTION_REQUIRED_MESSAGE = "La descripción es obligatoria.";
 const ASSIGNEE_REQUIRED_MESSAGE = "Selecciona a quién se asigna la tarea.";
@@ -47,10 +47,11 @@ interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentStage: ProjectStageKey;
+  users: AdminUser[];
   onCreate: (input: TaskInput) => void;
 }
 
-export function AddTaskDialog({ open, onOpenChange, currentStage, onCreate }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onOpenChange, currentStage, users, onCreate }: AddTaskDialogProps) {
   const emptyValues: TaskFormValues = { stage: currentStage, description: "", assignedTo: "" };
 
   const {
@@ -74,7 +75,7 @@ export function AddTaskDialog({ open, onOpenChange, currentStage, onCreate }: Ad
 
   const stage = watch("stage");
   const assignedTo = watch("assignedTo");
-  const selectedAssignee = MOCK_USERS.find((user) => user.id === assignedTo);
+  const selectedAssignee = users.find((user) => user.id === assignedTo);
 
   const onSubmit = (values: TaskFormValues) => {
     onCreate(values);
@@ -128,7 +129,7 @@ export function AddTaskDialog({ open, onOpenChange, currentStage, onCreate }: Ad
                 <SelectValue>{() => selectedAssignee?.name ?? SELECT_ASSIGNEE_PLACEHOLDER}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {MOCK_USERS.map((user) => (
+                {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name}
                   </SelectItem>

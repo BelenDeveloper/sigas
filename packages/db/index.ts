@@ -55,6 +55,33 @@ export {
   STOCK_MOVEMENT_TYPES,
 } from "./schema/inventory.js";
 export type {
+  ChecklistChannel,
+  NewProject,
+  NewProjectApprovalChecklist,
+  NewProjectDocument,
+  NewProjectExpense,
+  NewProjectLogistics,
+  NewProjectLogisticsTask,
+  NewProjectPaymentReceived,
+  NewProjectStageHistory,
+  Project,
+  ProjectApprovalChecklist,
+  ProjectCategory,
+  ProjectDocument,
+  ProjectExpense,
+  ProjectLogistics,
+  ProjectLogisticsTask,
+  ProjectPaymentReceived,
+  ProjectStage,
+  ProjectStageHistory,
+} from "./schema/projects.js";
+export {
+  CHECKLIST_CHANNELS,
+  PROJECT_CATEGORIES,
+  PROJECT_CODE_SEQUENCE_NAME,
+  PROJECT_STAGES,
+} from "./schema/projects.js";
+export type {
   NewPurchase,
   NewPurchaseItem,
   NewPurchasePayment,

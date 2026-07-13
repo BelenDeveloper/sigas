@@ -1,4 +1,6 @@
-import type { Project } from "@/lib/mocks/projects.mock";
+import type { ProjectDetail } from "@/hooks/use-projects";
+
+type Project = ProjectDetail;
 
 export function getProjectCollectedBOB(project: Pick<Project, "firstPaymentReceived" | "secondPaymentReceived">): number {
   const firstAmountBOB = project.firstPaymentReceived?.amountBOB ?? 0;

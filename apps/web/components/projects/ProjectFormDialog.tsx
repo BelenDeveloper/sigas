@@ -26,12 +26,8 @@ import { z } from "zod";
 
 import type { ProjectInput } from "@/hooks/use-projects";
 import type { Client } from "@/lib/client-types";
-import {
-  PROJECT_CATEGORIES,
-  PROJECT_CATEGORY_LABELS,
-  type ProjectCategory,
-  type ProjectCompany,
-} from "@/lib/mocks/projects.mock";
+import type { Company } from "@/lib/company-types";
+import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS, type ProjectCategory } from "@/lib/project-types";
 
 const NAME_REQUIRED_MESSAGE = "El nombre del proyecto es obligatorio.";
 const COMPANY_REQUIRED_MESSAGE = "Selecciona una empresa.";
@@ -75,7 +71,7 @@ const EMPTY_VALUES: ProjectFormInput = {
 interface ProjectFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  companies: ProjectCompany[];
+  companies: Company[];
   clients: Client[];
   onCreate: (input: ProjectInput) => void;
 }

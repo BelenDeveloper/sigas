@@ -20,4 +20,17 @@ export class SupabaseAdminService {
       },
     });
   }
+
+  async createSignedUploadUrl(
+    bucket: string,
+    path: string,
+  ): Promise<{ signedUrl: string; path: string; token: string }> {
+    const { data, error } = await this.client.storage.from(bucket).createSignedUploadUrl(path);
+
+    if (error || !data) {
+      throw new Error(`Failed to create signed upload URL: ${error?.message ?? "unknown error"}`);
+    }
+
+    return data;
+  }
 }

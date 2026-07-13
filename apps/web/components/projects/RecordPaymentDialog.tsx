@@ -27,6 +27,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method"
 
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
 const DATE_REQUIRED_MESSAGE = "La fecha es obligatoria.";
+const DESTINATION_REQUIRED_MESSAGE = "Indica a dónde fue el dinero (cuenta destino).";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_METHOD: PaymentMethod = "bank_transfer";
@@ -34,6 +35,7 @@ const DEFAULT_METHOD: PaymentMethod = "bank_transfer";
 const paymentSchema = z.object({
   amountBOB: z.coerce.number().positive(AMOUNT_POSITIVE_MESSAGE),
   method: z.enum(["cash", "qr", "bank_transfer", "check", "credit_card"]),
+  accountDestination: z.string().min(1, DESTINATION_REQUIRED_MESSAGE),
   date: z.string().min(1, DATE_REQUIRED_MESSAGE),
 });
 
@@ -45,7 +47,7 @@ function todayISODate(): string {
 }
 
 function buildEmptyValues(): PaymentFormInput {
-  return { amountBOB: 0, method: DEFAULT_METHOD, date: todayISODate() };
+  return { amountBOB: 0, method: DEFAULT_METHOD, accountDestination: "", date: todayISODate() };
 }
 
 interface RecordPaymentDialogProps {
@@ -126,6 +128,14 @@ export function RecordPaymentDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="record-payment-destination">Cuenta destino</Label>
+            <Input id="record-payment-destination" {...register("accountDestination")} />
+            {errors.accountDestination ? (
+              <p className="text-sm text-destructive">{errors.accountDestination.message}</p>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-2">

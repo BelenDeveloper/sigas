@@ -1,25 +1,24 @@
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 
+import type { ProjectTask } from "@/hooks/use-projects";
 import { getStageByKey } from "@/lib/constants/project-stages";
-import type { ProjectTask } from "@/lib/mocks/projects.mock";
-import { MOCK_USERS } from "@/lib/mocks/users.mock";
+import type { AdminUser } from "@/lib/user-permissions";
 
 const NO_TASKS_MESSAGE = "Todavía no hay tareas registradas.";
 const UNKNOWN_ASSIGNEE_LABEL = "—";
 
-function getUserName(userId: string): string {
-  return MOCK_USERS.find((user) => user.id === userId)?.name ?? UNKNOWN_ASSIGNEE_LABEL;
-}
-
 interface LogisticsTaskListProps {
   tasks: ProjectTask[];
+  users: AdminUser[];
   onToggleTaskCompleted: (taskId: string) => void;
 }
 
-export function LogisticsTaskList({ tasks, onToggleTaskCompleted }: LogisticsTaskListProps) {
+export function LogisticsTaskList({ tasks, users, onToggleTaskCompleted }: LogisticsTaskListProps) {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground">{NO_TASKS_MESSAGE}</p>;
   }
+
+  const getUserName = (userId: string) => users.find((user) => user.id === userId)?.name ?? UNKNOWN_ASSIGNEE_LABEL;
 
   const stageKeys = Array.from(new Set(tasks.map((task) => task.stage))).sort((a, b) => {
     const stepA = getStageByKey(a).step ?? Number.MAX_SAFE_INTEGER;
@@ -42,6 +41,7 @@ export function LogisticsTaskList({ tasks, onToggleTaskCompleted }: LogisticsTas
                 >
                   <Checkbox
                     checked={task.isCompleted}
+                    disabled={task.isCompleted}
                     onCheckedChange={() => onToggleTaskCompleted(task.id)}
                   />
                   <div className="flex flex-1 flex-col">

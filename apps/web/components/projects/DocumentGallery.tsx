@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@repo/ui/components/ui/card";
 import { FileText } from "lucide-react";
 
+import type { ProjectDocument } from "@/hooks/use-projects";
 import { getStageByKey } from "@/lib/constants/project-stages";
-import type { ProjectDocument } from "@/lib/mocks/projects.mock";
-import { MOCK_USERS } from "@/lib/mocks/users.mock";
+import type { AdminUser } from "@/lib/user-permissions";
 
 const NO_DOCUMENTS_MESSAGE = "Todavía no hay documentos cargados.";
 const UNKNOWN_UPLOADER_LABEL = "—";
@@ -17,18 +17,18 @@ function formatDateTime(isoDateTime: string): string {
   });
 }
 
-function getUploaderName(userId: string): string {
-  return MOCK_USERS.find((user) => user.id === userId)?.name ?? UNKNOWN_UPLOADER_LABEL;
-}
-
 interface DocumentGalleryProps {
   documents: ProjectDocument[];
+  users: AdminUser[];
 }
 
-export function DocumentGallery({ documents }: DocumentGalleryProps) {
+export function DocumentGallery({ documents, users }: DocumentGalleryProps) {
   if (documents.length === 0) {
     return <p className="text-sm text-muted-foreground">{NO_DOCUMENTS_MESSAGE}</p>;
   }
+
+  const getUploaderName = (userId: string) =>
+    users.find((user) => user.id === userId)?.name ?? UNKNOWN_UPLOADER_LABEL;
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

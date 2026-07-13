@@ -23,8 +23,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import type { ProjectDetail } from "@/hooks/use-projects";
 import { CANCELLED_STAGE_KEY, getNextStage, type ProjectStageKey } from "@/lib/constants/project-stages";
-import type { Project } from "@/lib/mocks/projects.mock";
 
 const NOTE_REQUIRED_FOR_CANCEL_MESSAGE = "Ingresa un motivo para cancelar el proyecto.";
 const CANCEL_OPTION_LABEL = "Cancelar proyecto";
@@ -52,7 +52,7 @@ type ChangeStageFormValues = z.infer<typeof changeStageSchema>;
 const EMPTY_VALUES: ChangeStageFormValues = { decision: DEFAULT_DECISION, note: "" };
 
 interface ChangeStageDialogProps {
-  project: Project;
+  project: ProjectDetail;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (nextStage: ProjectStageKey, note: string) => void;

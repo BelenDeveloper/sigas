@@ -16,11 +16,8 @@ import {
   type ProjectFilterState,
 } from "@/hooks/use-projects";
 import { getStageByKey, PROJECT_STAGES } from "@/lib/constants/project-stages";
-import {
-  PROJECT_CATEGORIES,
-  PROJECT_CATEGORY_LABELS,
-  type ProjectCompany,
-} from "@/lib/mocks/projects.mock";
+import type { Company } from "@/lib/company-types";
+import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from "@/lib/project-types";
 
 const ALL_COMPANIES_LABEL = "Todas las empresas";
 const ALL_CATEGORIES_LABEL = "Todas las categorías";
@@ -29,7 +26,7 @@ const ALL_STAGES_LABEL = "Todas las etapas";
 interface ProjectFiltersProps {
   filters: ProjectFilterState;
   onFiltersChange: (filters: Partial<ProjectFilterState>) => void;
-  companies: ProjectCompany[];
+  companies: Company[];
 }
 
 export function ProjectFilters({ filters, onFiltersChange, companies }: ProjectFiltersProps) {

@@ -18,17 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { ExpenseInput } from "@/hooks/use-projects";
 import { getStageByKey, PROJECT_STAGES, type ProjectStageKey } from "@/lib/constants/project-stages";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
+import { uploadProjectFile, type GetProjectUploadUrl } from "@/lib/project-file-upload";
 
 const DESCRIPTION_REQUIRED_MESSAGE = "La descripción es obligatoria.";
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
-const RECEIPT_REQUIRED_MESSAGE = "Ingresa una referencia del recibo.";
+const UPLOAD_ERROR_MESSAGE = "No se pudo subir el comprobante. Intenta nuevamente.";
 
 const PROJECT_STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key) as [
   ProjectStageKey,
@@ -43,7 +44,6 @@ const expenseSchema = z.object({
   description: z.string().min(1, DESCRIPTION_REQUIRED_MESSAGE),
   amountBOB: z.coerce.number().positive(AMOUNT_POSITIVE_MESSAGE),
   method: z.enum(["cash", "qr", "bank_transfer", "check", "credit_card"]),
-  receiptUrl: z.string().min(1, RECEIPT_REQUIRED_MESSAGE),
 });
 
 type ExpenseFormInput = z.input<typeof expenseSchema>;
@@ -53,16 +53,22 @@ interface AddExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentStage: ProjectStageKey;
+  getUploadUrl: GetProjectUploadUrl;
   onCreate: (input: ExpenseInput) => void;
 }
 
-export function AddExpenseDialog({ open, onOpenChange, currentStage, onCreate }: AddExpenseDialogProps) {
+export function AddExpenseDialog({
+  open,
+  onOpenChange,
+  currentStage,
+  getUploadUrl,
+  onCreate,
+}: AddExpenseDialogProps) {
   const emptyValues: ExpenseFormInput = {
     stage: currentStage,
     description: "",
     amountBOB: 0,
     method: DEFAULT_METHOD,
-    receiptUrl: "",
   };
 
   const {
@@ -77,9 +83,15 @@ export function AddExpenseDialog({ open, onOpenChange, currentStage, onCreate }:
     defaultValues: emptyValues,
   });
 
+  const [selectedReceipt, setSelectedReceipt] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   useEffect(() => {
     if (open) {
       reset(emptyValues);
+      setSelectedReceipt(null);
+      setUploadError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, currentStage, reset]);
@@ -87,9 +99,26 @@ export function AddExpenseDialog({ open, onOpenChange, currentStage, onCreate }:
   const stage = watch("stage");
   const method = watch("method");
 
-  const onSubmit = (values: ExpenseFormValues) => {
-    onCreate(values);
-    onOpenChange(false);
+  const handleReceiptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedReceipt(event.target.files?.[0] ?? null);
+  };
+
+  const onSubmit = async (values: ExpenseFormValues) => {
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const receiptUrl = selectedReceipt
+        ? await uploadProjectFile(selectedReceipt, getUploadUrl)
+        : undefined;
+
+      onCreate({ ...values, receiptUrl });
+      onOpenChange(false);
+    } catch {
+      setUploadError(UPLOAD_ERROR_MESSAGE);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -159,20 +188,15 @@ export function AddExpenseDialog({ open, onOpenChange, currentStage, onCreate }:
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="expense-form-receipt">Referencia del recibo</Label>
-            <Input
-              id="expense-form-receipt"
-              placeholder="Ej: recibo-materiales-001.jpg"
-              {...register("receiptUrl")}
-            />
-            {errors.receiptUrl ? (
-              <p className="text-sm text-destructive">{errors.receiptUrl.message}</p>
-            ) : null}
+            <Label htmlFor="expense-form-receipt">Comprobante (opcional)</Label>
+            <Input id="expense-form-receipt" type="file" onChange={handleReceiptChange} />
           </div>
 
+          {uploadError ? <p className="text-sm text-destructive">{uploadError}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Agregar gasto
+            <Button type="submit" disabled={isUploading} className="bg-brand text-brand-foreground hover:bg-brand/90">
+              {isUploading ? "Subiendo..." : "Agregar gasto"}
             </Button>
           </DialogFooter>
         </form>

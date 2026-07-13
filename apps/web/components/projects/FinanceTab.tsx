@@ -5,10 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import type { ExpenseInput, PaymentInput, PaymentInstallment } from "@/hooks/use-projects";
+import type {
+  ExpenseInput,
+  PaymentInput,
+  PaymentInstallment,
+  ProjectDetail,
+} from "@/hooks/use-projects";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import type { Project } from "@/lib/mocks/projects.mock";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payment-method";
+import type { GetProjectUploadUrl } from "@/lib/project-file-upload";
 import {
   getProjectCollectedBOB,
   getProjectGrossMarginBOB,
@@ -33,12 +38,13 @@ function formatDate(isoDate: string): string {
 }
 
 interface FinanceTabProps {
-  project: Project;
+  project: ProjectDetail;
+  getUploadUrl: GetProjectUploadUrl;
   onRecordPayment: (installment: PaymentInstallment, input: PaymentInput) => void;
   onAddExpense: (input: ExpenseInput) => void;
 }
 
-export function FinanceTab({ project, onRecordPayment, onAddExpense }: FinanceTabProps) {
+export function FinanceTab({ project, getUploadUrl, onRecordPayment, onAddExpense }: FinanceTabProps) {
   const [paymentInstallment, setPaymentInstallment] = useState<PaymentInstallment | null>(null);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
 
@@ -153,6 +159,7 @@ export function FinanceTab({ project, onRecordPayment, onAddExpense }: FinanceTa
         open={isExpenseDialogOpen}
         onOpenChange={setIsExpenseDialogOpen}
         currentStage={project.stage}
+        getUploadUrl={getUploadUrl}
         onCreate={onAddExpense}
       />
     </div>

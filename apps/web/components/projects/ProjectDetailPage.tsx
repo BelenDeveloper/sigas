@@ -7,10 +7,11 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { useClients } from "@/hooks/use-clients";
-import { useProjects } from "@/hooks/use-projects";
+import { useProject } from "@/hooks/use-projects";
+import { useUsers } from "@/hooks/use-users";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import { PROJECT_CATEGORY_LABELS } from "@/lib/mocks/projects.mock";
+import { hasModulePermission } from "@/lib/permission-helpers";
+import { PROJECT_CATEGORY_LABELS } from "@/lib/project-types";
 
 import { ChangeStageDialog } from "./ChangeStageDialog";
 import { DocumentsTab } from "./DocumentsTab";
@@ -19,7 +20,9 @@ import { LogisticsTab } from "./LogisticsTab";
 import { ProjectStagePipeline } from "./ProjectStagePipeline";
 
 const ADMIN_ROLE = "admin";
+const PROJECTS_MODULE = "projects";
 const PROJECTS_ROUTE = "/projects";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
 const PROJECT_NOT_FOUND_MESSAGE = "No se encontró el proyecto solicitado.";
 const TERMINAL_STAGES = ["completed", "cancelled"];
 
@@ -30,10 +33,12 @@ interface ProjectDetailPageProps {
 export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const authUser = useAtomValue(authUserAtom);
   const isAdmin = authUser?.role === ADMIN_ROLE;
+  const canViewProjects = hasModulePermission(authUser, PROJECTS_MODULE, "canView");
+  const canEditProject = hasModulePermission(authUser, PROJECTS_MODULE, "canEdit");
 
   const {
-    getProjectById,
-    companies,
+    project,
+    isLoading,
     changeStage,
     addTask,
     toggleTaskCompleted,
@@ -41,12 +46,19 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     addDocument,
     recordPayment,
     toggleApprovalStep,
-  } = useProjects();
-  const { clients } = useClients();
+    getUploadUrl,
+  } = useProject(projectId);
+  const { users } = useUsers();
 
   const [isChangeStageOpen, setIsChangeStageOpen] = useState(false);
 
-  const project = getProjectById(projectId);
+  if (!canViewProjects) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!project) {
     return (
@@ -65,9 +77,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     );
   }
 
-  const client = clients.find((candidate) => candidate.id === project.clientId);
-  const company = companies.find((candidate) => candidate.id === project.companyId);
-  const canChangeStage = !TERMINAL_STAGES.includes(project.stage);
+  const canChangeStage = canEditProject && !TERMINAL_STAGES.includes(project.stage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,7 +95,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         <span className="font-mono text-xs text-muted-foreground">{project.code}</span>
         <h2 className="text-xl font-semibold text-foreground">{project.name}</h2>
         <span className="text-sm text-muted-foreground">
-          {company?.name} · {client?.name} · {PROJECT_CATEGORY_LABELS[project.category]}
+          {project.companyName} · {project.clientName} · {PROJECT_CATEGORY_LABELS[project.category]}
         </span>
       </div>
 
@@ -111,8 +121,10 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         <TabsContent value="logistics" className="flex flex-col gap-4">
           <LogisticsTab
             project={project}
-            onAddTask={(input) => addTask(project.id, input)}
-            onToggleTaskCompleted={(taskId) => toggleTaskCompleted(project.id, taskId)}
+            users={users}
+            canEdit={canEditProject}
+            onAddTask={addTask}
+            onToggleTaskCompleted={toggleTaskCompleted}
           />
         </TabsContent>
 
@@ -120,8 +132,9 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
           <TabsContent value="finance" className="flex flex-col gap-4">
             <FinanceTab
               project={project}
-              onRecordPayment={(installment, input) => recordPayment(project.id, installment, input)}
-              onAddExpense={(input) => addExpense(project.id, input)}
+              getUploadUrl={getUploadUrl}
+              onRecordPayment={recordPayment}
+              onAddExpense={addExpense}
             />
           </TabsContent>
         ) : null}
@@ -129,8 +142,11 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         <TabsContent value="documents" className="flex flex-col gap-4">
           <DocumentsTab
             project={project}
-            onAddDocument={(input) => addDocument(project.id, input)}
-            onToggleApprovalStep={(stepKey) => toggleApprovalStep(project.id, stepKey)}
+            users={users}
+            canEdit={canEditProject}
+            getUploadUrl={getUploadUrl}
+            onAddDocument={addDocument}
+            onToggleApprovalStep={toggleApprovalStep}
           />
         </TabsContent>
       </Tabs>
@@ -139,7 +155,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         project={project}
         open={isChangeStageOpen}
         onOpenChange={setIsChangeStageOpen}
-        onConfirm={(nextStage, note) => changeStage(project.id, nextStage, note)}
+        onConfirm={changeStage}
       />
     </div>
   );

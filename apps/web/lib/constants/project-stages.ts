@@ -63,16 +63,3 @@ export function getNextStage(currentKey: ProjectStageKey): ProjectStageDefinitio
 
   return PIPELINE_STAGES.find((stage) => stage.step === nextStep) ?? null;
 }
-
-export interface ApprovalChecklistStepDefinition {
-  key: string;
-  label: string;
-}
-
-export const APPROVAL_CHECKLIST_STEPS: ApprovalChecklistStepDefinition[] = [
-  { key: "submit_kmz", label: "Enviar KMZ a YPFB" },
-  { key: "design_approval", label: "Recibir aprobación de diseño" },
-  { key: "sign_start_letter", label: "Firmar carta de inicio" },
-  { key: "municipal_inspection", label: "Inspeccionar con el inspector municipal" },
-  { key: "final_stamp", label: "Obtener el sello final" },
-];

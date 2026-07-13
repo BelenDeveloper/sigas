@@ -5,6 +5,7 @@ import { ClientsModule } from "./clients/clients.module.js";
 import { CompaniesModule } from "./companies/companies.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { InventoryModule } from "./inventory/inventory.module.js";
+import { ProjectsModule } from "./projects/projects.module.js";
 import { PurchasesModule } from "./purchases/purchases.module.js";
 import { SalesModule } from "./sales/sales.module.js";
 import { SuppliersModule } from "./suppliers/suppliers.module.js";
@@ -22,6 +23,7 @@ import { UsersModule } from "./users/users.module.js";
     SalesModule,
     PurchasesModule,
     CashModule,
+    ProjectsModule,
     TrpcModule,
   ],
 })

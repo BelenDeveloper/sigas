@@ -11,7 +11,13 @@ export type CashSessionStatus = (typeof CASH_SESSION_STATUSES)[number];
 export const CASH_ENTRY_TYPES = ["income", "expense"] as const;
 export type CashEntryType = (typeof CASH_ENTRY_TYPES)[number];
 
-export const CASH_ENTRY_REFERENCE_TYPES = ["sale", "purchase", "project_expense", "manual"] as const;
+export const CASH_ENTRY_REFERENCE_TYPES = [
+  "sale",
+  "purchase",
+  "project_expense",
+  "project_payment",
+  "manual",
+] as const;
 export type CashEntryReferenceType = (typeof CASH_ENTRY_REFERENCE_TYPES)[number];
 
 export const CASH_INCOME_CATEGORIES = ["sale", "collection", "other_income"] as const;

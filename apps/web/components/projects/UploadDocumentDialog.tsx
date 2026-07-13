@@ -18,16 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useAtomValue } from "jotai";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { DocumentInput } from "@/hooks/use-projects";
-import { authUserAtom } from "@/lib/atoms/auth.atom";
 import { getStageByKey, PROJECT_STAGES, type ProjectStageKey } from "@/lib/constants/project-stages";
+import { uploadProjectFile, type GetProjectUploadUrl } from "@/lib/project-file-upload";
 
 const FILE_NAME_REQUIRED_MESSAGE = "Ingresa un nombre para el documento.";
+const FILE_REQUIRED_MESSAGE = "Selecciona un archivo para subir.";
+const UPLOAD_ERROR_MESSAGE = "No se pudo subir el archivo. Intenta nuevamente.";
 
 const PROJECT_STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key) as [
   ProjectStageKey,
@@ -45,6 +46,7 @@ interface UploadDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentStage: ProjectStageKey;
+  getUploadUrl: GetProjectUploadUrl;
   onCreate: (input: DocumentInput) => void;
 }
 
@@ -52,9 +54,9 @@ export function UploadDocumentDialog({
   open,
   onOpenChange,
   currentStage,
+  getUploadUrl,
   onCreate,
 }: UploadDocumentDialogProps) {
-  const authUser = useAtomValue(authUserAtom);
   const emptyValues: DocumentFormValues = { stage: currentStage, fileName: "" };
 
   const {
@@ -69,9 +71,15 @@ export function UploadDocumentDialog({
     defaultValues: emptyValues,
   });
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   useEffect(() => {
     if (open) {
       reset(emptyValues);
+      setSelectedFile(null);
+      setUploadError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, currentStage, reset]);
@@ -79,16 +87,32 @@ export function UploadDocumentDialog({
   const stage = watch("stage");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
+    const file = event.target.files?.[0] ?? null;
+    setSelectedFile(file);
 
-    if (selectedFile) {
-      setValue("fileName", selectedFile.name, { shouldValidate: true });
+    if (file) {
+      setValue("fileName", file.name, { shouldValidate: true });
     }
   };
 
-  const onSubmit = (values: DocumentFormValues) => {
-    onCreate({ ...values, uploadedBy: authUser?.id ?? "" });
-    onOpenChange(false);
+  const onSubmit = async (values: DocumentFormValues) => {
+    if (!selectedFile) {
+      setUploadError(FILE_REQUIRED_MESSAGE);
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const path = await uploadProjectFile(selectedFile, getUploadUrl);
+      onCreate({ stage: values.stage, name: values.fileName, fileUrl: path, fileType: selectedFile.type });
+      onOpenChange(false);
+    } catch {
+      setUploadError(UPLOAD_ERROR_MESSAGE);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -132,9 +156,11 @@ export function UploadDocumentDialog({
             ) : null}
           </div>
 
+          {uploadError ? <p className="text-sm text-destructive">{uploadError}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Subir documento
+            <Button type="submit" disabled={isUploading} className="bg-brand text-brand-foreground hover:bg-brand/90">
+              {isUploading ? "Subiendo..." : "Subir documento"}
             </Button>
           </DialogFooter>
         </form>

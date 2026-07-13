@@ -1,8 +1,8 @@
 import { Receipt } from "lucide-react";
 
+import type { ProjectExpense } from "@/hooks/use-projects";
 import { getStageByKey } from "@/lib/constants/project-stages";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import type { ProjectExpense } from "@/lib/mocks/projects.mock";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payment-method";
 
 const NO_EXPENSES_MESSAGE = "Todavía no hay gastos registrados.";
@@ -50,8 +50,8 @@ export function ProjectExpenseList({ expenses }: ProjectExpenseListProps) {
                   <div className="flex flex-1 flex-col">
                     <span className="text-sm text-foreground">{expense.description}</span>
                     <span className="text-xs text-muted-foreground">
-                      {formatDate(expense.date)} · {PAYMENT_METHOD_LABELS[expense.method]} ·{" "}
-                      {expense.receiptUrl}
+                      {formatDate(expense.date)} · {PAYMENT_METHOD_LABELS[expense.method]}
+                      {expense.receiptUrl ? ` · ${expense.receiptUrl}` : ""}
                     </span>
                   </div>
                   <span className="text-sm font-semibold text-foreground">
