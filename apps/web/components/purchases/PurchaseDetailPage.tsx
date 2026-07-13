@@ -44,6 +44,7 @@ const EMPTY_PAYMENT: PurchasePaymentInput = {
   method: DEFAULT_PAYMENT_METHOD,
   accountDestination: "",
 };
+const ACCOUNT_DESTINATION_REQUIRED_MESSAGE = "Indica a dónde fue el dinero (cuenta destino).";
 
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(DATE_LOCALE, {
@@ -66,6 +67,7 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
 
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [newPayment, setNewPayment] = useState<PurchasePaymentInput>(EMPTY_PAYMENT);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   if (!canViewPurchases) {
     return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
@@ -93,7 +95,13 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
   }
 
   const handleConfirmPayment = () => {
+    if (!newPayment.accountDestination.trim()) {
+      setPaymentError(ACCOUNT_DESTINATION_REQUIRED_MESSAGE);
+      return;
+    }
+
     addPayment(newPayment);
+    setPaymentError(null);
     setNewPayment(EMPTY_PAYMENT);
     setIsAddingPayment(false);
   };
@@ -243,6 +251,10 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
                 />
               </div>
 
+              {paymentError ? (
+                <p className="text-sm text-destructive sm:col-span-3">{paymentError}</p>
+              ) : null}
+
               <div className="flex gap-2 sm:col-span-3">
                 <Button
                   className="bg-brand text-brand-foreground hover:bg-brand/90"
@@ -250,7 +262,13 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
                 >
                   Confirmar pago
                 </Button>
-                <Button variant="outline" onClick={() => setIsAddingPayment(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingPayment(false);
+                    setPaymentError(null);
+                  }}
+                >
                   Cancelar
                 </Button>
               </div>

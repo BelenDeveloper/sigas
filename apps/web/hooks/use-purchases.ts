@@ -96,7 +96,7 @@ function toPurchasePaymentMutationInput(purchaseId: string, payment: PurchasePay
     purchaseId,
     amount: payment.amountBOB,
     paymentMethod: payment.method,
-    accountDestination: payment.accountDestination || undefined,
+    accountDestination: payment.accountDestination,
   };
 }
 

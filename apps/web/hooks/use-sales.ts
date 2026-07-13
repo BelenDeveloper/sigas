@@ -104,7 +104,7 @@ function toSalePaymentMutationInput(saleId: string, payment: SalePaymentInput) {
     saleId,
     amount: payment.amountBOB,
     paymentMethod: payment.method,
-    accountDestination: payment.accountDestination || undefined,
+    accountDestination: payment.accountDestination,
   };
 }
 

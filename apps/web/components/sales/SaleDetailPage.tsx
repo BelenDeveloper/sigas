@@ -42,6 +42,7 @@ const SALES_ROUTE = "/sales";
 const DATE_LOCALE = "es-BO";
 const CANCELLED_STATUS = "cancelled";
 const CANCEL_REASON_REQUIRED_MESSAGE = "Ingresa el motivo de la cancelación.";
+const ACCOUNT_DESTINATION_REQUIRED_MESSAGE = "Indica a dónde fue el dinero (cuenta destino).";
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = "cash";
 const EMPTY_PAYMENT: SalePaymentInput = {
@@ -75,6 +76,7 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   if (!canViewSales) {
     return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
@@ -99,7 +101,13 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
   const canCancelSale = isAdmin && sale.status !== CANCELLED_STATUS;
 
   const handleConfirmPayment = () => {
+    if (!newPayment.accountDestination.trim()) {
+      setPaymentError(ACCOUNT_DESTINATION_REQUIRED_MESSAGE);
+      return;
+    }
+
     addPayment(newPayment);
+    setPaymentError(null);
     setNewPayment(EMPTY_PAYMENT);
     setIsAddingPayment(false);
   };
@@ -293,6 +301,10 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
                 />
               </div>
 
+              {paymentError ? (
+                <p className="text-sm text-destructive sm:col-span-3">{paymentError}</p>
+              ) : null}
+
               <div className="flex gap-2 sm:col-span-3">
                 <Button
                   className="bg-brand text-brand-foreground hover:bg-brand/90"
@@ -300,7 +312,13 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
                 >
                   Confirmar pago
                 </Button>
-                <Button variant="outline" onClick={() => setIsAddingPayment(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingPayment(false);
+                    setPaymentError(null);
+                  }}
+                >
                   Cancelar
                 </Button>
               </div>
