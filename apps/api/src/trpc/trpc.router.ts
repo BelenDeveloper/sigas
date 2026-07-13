@@ -1,5 +1,6 @@
 import { healthRouter } from "./routers/health.router.js";
 import { router } from "./trpc.service.js";
+import { cashRouter } from "../cash/cash.router.js";
 import { clientsRouter } from "../clients/clients.router.js";
 import { companiesRouter } from "../companies/companies.router.js";
 import { inventoryRouter } from "../inventory/inventory.router.js";
@@ -17,6 +18,7 @@ export const appRouter = router({
   suppliers: suppliersRouter,
   sales: salesRouter,
   purchases: purchasesRouter,
+  cash: cashRouter,
 });
 
 export type AppRouter = typeof appRouter;

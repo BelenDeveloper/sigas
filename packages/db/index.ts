@@ -1,5 +1,33 @@
 export * from "./client.js";
 export * as schema from "./schema/index.js";
+export type {
+  CashEntry,
+  CashEntryReferenceType,
+  CashEntryType,
+  CashExpenseCategory,
+  CashIncomeCategory,
+  CashSession,
+  CashSessionStatus,
+  CreditorType,
+  NewCashEntry,
+  NewCashSession,
+  NewPartnerDistribution,
+  NewPayableAccount,
+  NewPayablePayment,
+  PartnerDistribution,
+  PayableAccount,
+  PayablePayment,
+  PayableStatus,
+} from "./schema/cash.js";
+export {
+  CASH_ENTRY_REFERENCE_TYPES,
+  CASH_ENTRY_TYPES,
+  CASH_EXPENSE_CATEGORIES,
+  CASH_INCOME_CATEGORIES,
+  CASH_SESSION_STATUSES,
+  CREDITOR_TYPES,
+  PAYABLE_STATUSES,
+} from "./schema/cash.js";
 export type { Client, ClientDocumentType, NewClient } from "./schema/clients.js";
 export { CLIENT_DOCUMENT_TYPES } from "./schema/clients.js";
 export type {

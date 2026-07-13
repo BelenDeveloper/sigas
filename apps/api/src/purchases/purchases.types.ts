@@ -53,7 +53,7 @@ export interface CreatePurchaseInput {
 export interface AddPurchasePaymentInput {
   amount: number;
   paymentMethod: PaymentMethod;
-  accountDestination?: string;
+  accountDestination: string;
   notes?: string;
 }
 

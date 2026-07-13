@@ -1,3 +1,4 @@
+export * from "./cash.js";
 export * from "./clients.js";
 export * from "./companies.js";
 export * from "./inventory.js";

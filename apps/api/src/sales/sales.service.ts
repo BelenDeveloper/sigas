@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import { db, schema, type PaymentMethod, type Sale, type SaleStatus } from "@repo/db";
+import { db, schema, type Sale, type SaleStatus } from "@repo/db";
 import { and, desc, eq, getTableColumns, gte, ilike, lte, or, sql } from "drizzle-orm";
 
+import { CashService } from "../cash/cash.service.js";
 import { InventoryService } from "../inventory/inventory.service.js";
 import {
   EmptySaleError,
@@ -25,25 +26,10 @@ const SALE_TYPE_CODE_PREFIXES: Record<Sale["type"], string> = {
 
 const SALE_CODE_PADDING_LENGTH = 4;
 
-// Placeholder for the automatic cash entry created when a sale payment is
-// recorded. Wire a real implementation in once the Cash module exists.
-export interface CashServicePort {
-  createAutomaticEntry(input: {
-    amount: number;
-    paymentMethod: PaymentMethod;
-    accountDestination: string | undefined;
-    referenceId: string;
-    referenceType: "sale";
-    createdBy: string;
-  }): Promise<void>;
-}
-
 @Injectable()
 export class SalesService {
   private readonly inventoryService = new InventoryService();
-  // cashService will be injected once the Cash module is built — see clients.service.ts
-  // for the same forward-reference convention (getClientDebt).
-  private readonly cashService: CashServicePort | undefined = undefined;
+  private readonly cashService = new CashService();
 
   async findAll(filters: SaleFilters): Promise<SaleListItem[]> {
     const conditions = [];
@@ -218,16 +204,17 @@ export class SalesService {
       throw new Error(`Failed to record payment for sale: ${saleId}`);
     }
 
-    if (this.cashService) {
-      await this.cashService.createAutomaticEntry({
-        amount: payment.amount,
-        paymentMethod: payment.paymentMethod,
-        accountDestination: payment.accountDestination,
-        referenceId: saleId,
-        referenceType: "sale",
-        createdBy: userId,
-      });
-    }
+    await this.cashService.createAutomaticEntry({
+      type: "income",
+      category: "sale",
+      description: `Payment for sale ${sale.code}`,
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      accountDestination: payment.accountDestination,
+      referenceId: saleId,
+      referenceType: "sale",
+      createdBy: userId,
+    });
 
     const balance = await this.getSaleBalance(saleId);
     const newStatus: SaleStatus = balance.totalPending <= 0 ? "paid" : "partial";

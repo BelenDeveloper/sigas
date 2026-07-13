@@ -56,7 +56,7 @@ export interface CreateSaleInput {
 export interface AddSalePaymentInput {
   amount: number;
   paymentMethod: PaymentMethod;
-  accountDestination?: string;
+  accountDestination: string;
   notes?: string;
 }
 

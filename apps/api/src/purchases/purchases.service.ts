@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import { db, schema, type PaymentMethod, type Purchase, type PurchaseStatus } from "@repo/db";
+import { db, schema, type Purchase, type PurchaseStatus } from "@repo/db";
 import { and, desc, eq, getTableColumns, gte, lte, sql } from "drizzle-orm";
 
+import { CashService } from "../cash/cash.service.js";
 import { InventoryService } from "../inventory/inventory.service.js";
 import {
   EmptyPurchaseError,
@@ -18,24 +19,10 @@ import {
 const PURCHASE_CODE_PREFIX = "COM";
 const PURCHASE_CODE_PADDING_LENGTH = 4;
 
-// Placeholder for the automatic cash entry created when a purchase payment is
-// recorded. Wire a real implementation in once the Cash module is built — see
-// sales.service.ts for the same forward-reference convention.
-export interface CashServicePort {
-  createAutomaticEntry(input: {
-    amount: number;
-    paymentMethod: PaymentMethod;
-    accountDestination: string | undefined;
-    referenceId: string;
-    referenceType: "purchase";
-    createdBy: string;
-  }): Promise<void>;
-}
-
 @Injectable()
 export class PurchasesService {
   private readonly inventoryService = new InventoryService();
-  private readonly cashService: CashServicePort | undefined = undefined;
+  private readonly cashService = new CashService();
 
   async findAll(filters: PurchaseFilters): Promise<PurchaseListItem[]> {
     const conditions = [];
@@ -203,16 +190,17 @@ export class PurchasesService {
       throw new Error(`Failed to record payment for purchase: ${purchaseId}`);
     }
 
-    if (this.cashService) {
-      await this.cashService.createAutomaticEntry({
-        amount: payment.amount,
-        paymentMethod: payment.paymentMethod,
-        accountDestination: payment.accountDestination,
-        referenceId: purchaseId,
-        referenceType: "purchase",
-        createdBy: userId,
-      });
-    }
+    await this.cashService.createAutomaticEntry({
+      type: "expense",
+      category: "purchase",
+      description: `Payment for purchase ${purchase.code}`,
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      accountDestination: payment.accountDestination,
+      referenceId: purchaseId,
+      referenceType: "purchase",
+      createdBy: userId,
+    });
 
     const balance = await this.getPurchaseBalance(purchaseId);
     const newStatus: PurchaseStatus =

@@ -43,7 +43,7 @@ const addPaymentInputSchema = z.object({
   saleId: z.string().uuid(),
   amount: z.number().positive(),
   paymentMethod: z.enum(PAYMENT_METHODS),
-  accountDestination: z.string().optional(),
+  accountDestination: z.string().min(1),
   notes: z.string().optional(),
 });
 
