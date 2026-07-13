@@ -23,8 +23,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import type { PayablePaymentInput } from "@/hooks/use-cash";
-import type { Payable } from "@/lib/mocks/cash.mock";
+import type { PayablePaymentInput, PayableView } from "@/hooks/use-cash";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 
 const DESTINATION_REQUIRED_MESSAGE = "Ingresa el destino del pago.";
@@ -58,7 +57,7 @@ function buildEmptyValues(): PaymentFormInput {
 }
 
 interface AddPaymentDialogProps {
-  payable: Payable | null;
+  payable: PayableView | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (payableId: string, payment: PayablePaymentInput) => void;

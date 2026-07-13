@@ -1,6 +1,6 @@
 import { Badge } from "@repo/ui/components/ui/badge";
 
-import { PAYABLE_STATUS_LABELS, type PayableStatus } from "@/lib/payable-helpers";
+import { PAYABLE_STATUS_LABELS, type PayableStatus } from "@/lib/cash-types";
 
 const PAYABLE_STATUS_BADGE_CLASSES: Record<PayableStatus, string> = {
   pending: "bg-gray-100 text-gray-800",

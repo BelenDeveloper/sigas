@@ -1,3 +1,4 @@
+import { Button } from "@repo/ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -7,9 +8,11 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 import { cn } from "@repo/ui/lib/utils";
+import { Ban } from "lucide-react";
 
+import type { CashEntryView } from "@/hooks/use-cash";
+import { CASH_ENTRY_CATEGORY_LABELS, type CashEntryType } from "@/lib/cash-types";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import { CASH_ENTRY_CATEGORY_LABELS, type CashEntry, type CashEntryType } from "@/lib/mocks/cash.mock";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payment-method";
 
 const NO_ENTRIES_MESSAGE = "No se encontraron movimientos con estos filtros.";
@@ -33,10 +36,12 @@ function formatTime(isoDateTime: string): string {
 }
 
 interface CashEntryTableProps {
-  entries: CashEntry[];
+  entries: CashEntryView[];
+  canCancel: boolean;
+  onCancelEntry: (entryId: string) => void;
 }
 
-export function CashEntryTable({ entries }: CashEntryTableProps) {
+export function CashEntryTable({ entries, canCancel, onCancelEntry }: CashEntryTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -48,12 +53,13 @@ export function CashEntryTable({ entries }: CashEntryTableProps) {
           <TableHead>Método</TableHead>
           <TableHead>Destino</TableHead>
           <TableHead>Monto</TableHead>
+          {canCancel ? <TableHead className="text-right">Acciones</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
         {entries.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="text-center text-muted-foreground">
+            <TableCell colSpan={canCancel ? 8 : 7} className="text-center text-muted-foreground">
               {NO_ENTRIES_MESSAGE}
             </TableCell>
           </TableRow>
@@ -74,6 +80,20 @@ export function CashEntryTable({ entries }: CashEntryTableProps) {
               <TableCell className={cn(!entry.isCancelled && ENTRY_TYPE_TEXT_CLASSES[entry.type])}>
                 {formatCurrencyBOB(entry.amountBOB)}
               </TableCell>
+              {canCancel ? (
+                <TableCell className="text-right">
+                  {!entry.isCancelled ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Cancelar movimiento"
+                      onClick={() => onCancelEntry(entry.id)}
+                    >
+                      <Ban className="size-4" />
+                    </Button>
+                  ) : null}
+                </TableCell>
+              ) : null}
             </TableRow>
           ))
         )}

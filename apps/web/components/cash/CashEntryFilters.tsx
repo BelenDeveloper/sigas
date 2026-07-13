@@ -22,7 +22,7 @@ import {
   INCOME_CATEGORIES,
   type CashEntryCategory,
   type CashEntryType,
-} from "@/lib/mocks/cash.mock";
+} from "@/lib/cash-types";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 
 const ALL_TYPES_LABEL = "Todos los tipos";
@@ -42,7 +42,7 @@ interface CashEntryFiltersProps {
 }
 
 export function CashEntryFilters({ filters, onFiltersChange }: CashEntryFiltersProps) {
-  const visibleCategories: CashEntryCategory[] =
+  const visibleCategories: readonly CashEntryCategory[] =
     filters.type === "income"
       ? INCOME_CATEGORIES
       : filters.type === "expense"

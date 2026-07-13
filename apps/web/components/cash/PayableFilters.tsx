@@ -11,12 +11,10 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/ui/tabs";
 
 import { ALL_CREDITOR_TYPES_OPTION, ALL_PAYABLE_STATUSES_OPTION, type PayableFilterState } from "@/hooks/use-cash";
-import { CREDITOR_TYPES, CREDITOR_TYPE_LABELS } from "@/lib/mocks/cash.mock";
-import { PAYABLE_STATUS_LABELS, type PayableStatus } from "@/lib/payable-helpers";
+import { CREDITOR_TYPES, CREDITOR_TYPE_LABELS, PAYABLE_STATUSES, PAYABLE_STATUS_LABELS } from "@/lib/cash-types";
 
 const ALL_CREDITOR_TYPES_LABEL = "Todos";
 const ALL_STATUSES_LABEL = "Todos los estados";
-const PAYABLE_STATUSES: PayableStatus[] = ["pending", "partial", "paid", "overdue"];
 
 interface PayableFiltersProps {
   filters: PayableFilterState;

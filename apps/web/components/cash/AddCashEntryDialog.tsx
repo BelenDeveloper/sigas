@@ -28,7 +28,7 @@ import {
   EXPENSE_CATEGORIES,
   INCOME_CATEGORIES,
   type CashEntryType,
-} from "@/lib/mocks/cash.mock";
+} from "@/lib/cash-types";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 
 const DESCRIPTION_REQUIRED_MESSAGE = "La descripción es obligatoria.";

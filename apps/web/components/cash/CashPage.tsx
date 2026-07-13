@@ -1,16 +1,32 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/ui/tabs";
+import { useAtomValue } from "jotai";
 
 import { useCash } from "@/hooks/use-cash";
 import { useSuppliers } from "@/hooks/use-suppliers";
+import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { AccountsPayableTab } from "./AccountsPayableTab";
 import { CashTab } from "./CashTab";
 
+const CASH_MODULE = "cash";
+const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
+
 export function CashPage() {
+  const authUser = useAtomValue(authUserAtom);
+  const canViewCash = hasModulePermission(authUser, CASH_MODULE, "canView");
+  const canCreateCash = hasModulePermission(authUser, CASH_MODULE, "canCreate");
+  const canEditCash = hasModulePermission(authUser, CASH_MODULE, "canEdit");
+  const isAdmin = authUser?.role === "admin";
+
   const cash = useCash();
   const { suppliers } = useSuppliers();
+
+  if (!canViewCash) {
+    return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
+  }
 
   return (
     <Tabs defaultValue="cash">
@@ -25,11 +41,15 @@ export function CashPage() {
           onOpenSession={cash.openSession}
           onCloseSession={cash.closeSession}
           entries={cash.entries}
-          allEntries={cash.allEntries}
+          destinationBalances={cash.destinationBalances}
+          totalCashBalanceBOB={cash.totalCashBalanceBOB}
           entryFilters={cash.entryFilters}
           onEntryFiltersChange={cash.setEntryFilters}
           onAddEntry={cash.addCashEntry}
+          onCancelEntry={cash.cancelEntry}
           onAddPartnerDistribution={cash.addPartnerDistribution}
+          canCreate={canCreateCash}
+          canCancel={isAdmin}
         />
       </TabsContent>
 
@@ -41,6 +61,8 @@ export function CashPage() {
           suppliers={suppliers}
           onCreatePayable={cash.createPayable}
           onAddPayment={cash.addPayablePayment}
+          canCreate={canCreateCash}
+          canEdit={canEditCash}
         />
       </TabsContent>
     </Tabs>

@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { PayableInput } from "@/hooks/use-cash";
-import { CREDITOR_TYPES, CREDITOR_TYPE_LABELS, type CreditorType } from "@/lib/mocks/cash.mock";
+import { CREDITOR_TYPES, CREDITOR_TYPE_LABELS, type CreditorType } from "@/lib/cash-types";
 import type { Supplier } from "@/lib/supplier-types";
 
 const SUPPLIER_REQUIRED_MESSAGE = "Selecciona un proveedor.";

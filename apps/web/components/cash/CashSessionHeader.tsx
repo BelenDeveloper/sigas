@@ -16,7 +16,7 @@ import { Input } from "@repo/ui/components/ui/input";
 import { Label } from "@repo/ui/components/ui/label";
 import { useState } from "react";
 
-import type { CashSession } from "@/lib/mocks/cash.mock";
+import type { CashSessionView } from "@/hooks/use-cash";
 
 const TIME_LOCALE = "es-BO";
 const NO_OPEN_SESSION_MESSAGE = "No hay sesión abierta";
@@ -30,7 +30,7 @@ function formatTime(isoDateTime: string): string {
 }
 
 interface CashSessionHeaderProps {
-  session: CashSession;
+  session: CashSessionView | null;
   onOpenSession: () => void;
   onCloseSession: (closingAmountBOB: number) => void;
 }
@@ -63,11 +63,13 @@ export function CashSessionHeader({ session, onOpenSession, onCloseSession }: Ca
       <CardContent className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col">
           <span className="text-sm font-medium text-foreground">
-            {session.isOpen ? `Sesión abierta desde las ${formatTime(session.openedAt)}` : NO_OPEN_SESSION_MESSAGE}
+            {session?.isOpen
+              ? `Sesión abierta desde las ${formatTime(session.openedAt)}`
+              : NO_OPEN_SESSION_MESSAGE}
           </span>
         </div>
 
-        {session.isOpen ? (
+        {session?.isOpen ? (
           <Button variant="outline" onClick={handleOpenCloseDialog}>
             Cerrar sesión
           </Button>

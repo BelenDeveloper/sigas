@@ -2,20 +2,9 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  MOCK_CASH_ENTRIES,
-  MOCK_CASH_SESSION,
-  MOCK_PAYABLES,
-  type CashEntry,
-  type CashEntryCategory,
-  type CashEntryType,
-  type CashSession,
-  type CreditorType,
-  type Payable,
-  type PayablePayment,
-} from "@/lib/mocks/cash.mock";
+import type { CashEntryCategory, CashEntryType, CreditorType, PayableStatus } from "@/lib/cash-types";
 import type { PaymentMethod } from "@/lib/payment-method";
-import { getPayableStatus } from "@/lib/payable-helpers";
+import { trpc } from "@/lib/trpc/client";
 
 export const ALL_CASH_ENTRY_TYPES_OPTION = "all";
 export const ALL_CASH_ENTRY_CATEGORIES_OPTION = "all";
@@ -48,7 +37,7 @@ export interface PartnerDistributionInput {
 
 export interface PayableFilterState {
   creditorType: CreditorType | typeof ALL_CREDITOR_TYPES_OPTION;
-  status: ReturnType<typeof getPayableStatus> | typeof ALL_PAYABLE_STATUSES_OPTION;
+  status: PayableStatus | typeof ALL_PAYABLE_STATUSES_OPTION;
 }
 
 export interface PayableInput {
@@ -69,6 +58,54 @@ export interface PayablePaymentInput {
   date: string;
 }
 
+export interface CashSessionView {
+  id: string;
+  isOpen: boolean;
+  openedAt: string;
+  closedAt: string | null;
+  closingAmountBOB: number | null;
+}
+
+export interface CashEntryView {
+  id: string;
+  createdAt: string;
+  type: CashEntryType;
+  category: CashEntryCategory;
+  description: string;
+  method: PaymentMethod;
+  accountDestination: string;
+  amountBOB: number;
+  isCancelled: boolean;
+}
+
+export interface DestinationBalance {
+  destination: string;
+  balanceBOB: number;
+}
+
+export interface PayableView {
+  id: string;
+  creditorType: CreditorType;
+  creditorName: string;
+  supplierId: string | null;
+  amountBOB: number;
+  paidBOB: number;
+  pendingBOB: number;
+  status: PayableStatus;
+  dueDate: string;
+  category: string;
+  invoiceNumber: string;
+  notes: string;
+}
+
+export interface PayablePaymentView {
+  id: string;
+  date: string;
+  amountBOB: number;
+  method: PaymentMethod;
+  destination: string;
+}
+
 const DEFAULT_CASH_ENTRY_FILTERS: CashEntryFilterState = {
   type: ALL_CASH_ENTRY_TYPES_OPTION,
   category: ALL_CASH_ENTRY_CATEGORIES_OPTION,
@@ -81,21 +118,91 @@ const DEFAULT_PAYABLE_FILTERS: PayableFilterState = {
   status: ALL_PAYABLE_STATUSES_OPTION,
 };
 
-function nowISO(): string {
-  return new Date().toISOString();
+function toSession(session: {
+  id: string;
+  status: string;
+  openedAt: Date | string;
+  closedAt: Date | string | null;
+  closingAmount: string | null;
+}): CashSessionView {
+  return {
+    id: session.id,
+    isOpen: session.status === "open",
+    openedAt: String(session.openedAt),
+    closedAt: session.closedAt ? String(session.closedAt) : null,
+    closingAmountBOB: session.closingAmount !== null ? Number(session.closingAmount) : null,
+  };
+}
+
+function toEntry(entry: {
+  id: string;
+  createdAt: Date | string;
+  type: string;
+  category: string;
+  description: string;
+  paymentMethod: string;
+  accountDestination: string | null;
+  amount: string;
+  cancelled: boolean;
+}): CashEntryView {
+  return {
+    id: entry.id,
+    createdAt: String(entry.createdAt),
+    type: entry.type as CashEntryType,
+    category: entry.category as CashEntryCategory,
+    description: entry.description,
+    method: entry.paymentMethod as PaymentMethod,
+    accountDestination: entry.accountDestination ?? "",
+    amountBOB: Number(entry.amount),
+    isCancelled: entry.cancelled,
+  };
+}
+
+function toPayable(payable: {
+  id: string;
+  creditorType: string;
+  creditorName: string;
+  supplierId: string | null;
+  amount: string;
+  paidAmount: string;
+  status: string;
+  dueDate: string | null;
+  category: string | null;
+  invoiceNumber: string | null;
+  notes: string | null;
+}): PayableView {
+  const amountBOB = Number(payable.amount);
+  const paidBOB = Number(payable.paidAmount);
+
+  return {
+    id: payable.id,
+    creditorType: payable.creditorType as CreditorType,
+    creditorName: payable.creditorName,
+    supplierId: payable.supplierId,
+    amountBOB,
+    paidBOB,
+    pendingBOB: amountBOB - paidBOB,
+    status: payable.status as PayableStatus,
+    dueDate: payable.dueDate ?? "",
+    category: payable.category ?? "",
+    invoiceNumber: payable.invoiceNumber ?? "",
+    notes: payable.notes ?? "",
+  };
 }
 
 interface UseCashResult {
-  session: CashSession;
+  session: CashSessionView | null;
   openSession: () => void;
   closeSession: (closingAmountBOB: number) => void;
-  entries: CashEntry[];
-  allEntries: CashEntry[];
+  entries: CashEntryView[];
+  destinationBalances: DestinationBalance[];
+  totalCashBalanceBOB: number;
   entryFilters: CashEntryFilterState;
   setEntryFilters: (filters: Partial<CashEntryFilterState>) => void;
   addCashEntry: (input: CashEntryInput) => void;
+  cancelEntry: (entryId: string) => void;
   addPartnerDistribution: (input: PartnerDistributionInput) => void;
-  payables: Payable[];
+  payables: PayableView[];
   payableFilters: PayableFilterState;
   setPayableFilters: (filters: Partial<PayableFilterState>) => void;
   createPayable: (input: PayableInput) => void;
@@ -103,13 +210,13 @@ interface UseCashResult {
 }
 
 export function useCash(): UseCashResult {
-  const [session, setSession] = useState<CashSession>(MOCK_CASH_SESSION);
-  const [entries, setEntries] = useState<CashEntry[]>(MOCK_CASH_ENTRIES);
-  const [payables, setPayables] = useState<Payable[]>(MOCK_PAYABLES);
-  const [entryFilters, setEntryFiltersState] =
-    useState<CashEntryFilterState>(DEFAULT_CASH_ENTRY_FILTERS);
-  const [payableFilters, setPayableFiltersState] =
-    useState<PayableFilterState>(DEFAULT_PAYABLE_FILTERS);
+  const utils = trpc.useUtils();
+
+  const { data: rawSession } = trpc.cash.getCurrentSession.useQuery();
+  const session = useMemo(() => (rawSession ? toSession(rawSession) : null), [rawSession]);
+
+  const [entryFilters, setEntryFiltersState] = useState<CashEntryFilterState>(DEFAULT_CASH_ENTRY_FILTERS);
+  const [payableFilters, setPayableFiltersState] = useState<PayableFilterState>(DEFAULT_PAYABLE_FILTERS);
 
   const setEntryFilters = (filters: Partial<CashEntryFilterState>) => {
     setEntryFiltersState((previous) => ({ ...previous, ...filters }));
@@ -119,105 +226,81 @@ export function useCash(): UseCashResult {
     setPayableFiltersState((previous) => ({ ...previous, ...filters }));
   };
 
-  const openSession = () => {
-    setSession({
-      id: crypto.randomUUID(),
-      isOpen: true,
-      openedAt: nowISO(),
-      closedAt: null,
-      closingAmountBOB: null,
-    });
+  const { data: rawEntries } = trpc.cash.listEntries.useQuery(
+    { sessionId: session?.id },
+    { enabled: session !== null },
+  );
+
+  const { data: rawWhereIsTheMoney } = trpc.cash.getWhereIsTheMoney.useQuery({});
+  const { data: rawPayables } = trpc.cash.listPayables.useQuery({});
+
+  const invalidateSession = () => void utils.cash.getCurrentSession.invalidate();
+
+  const invalidateEntries = () => {
+    void utils.cash.listEntries.invalidate();
+    void utils.cash.getWhereIsTheMoney.invalidate();
   };
 
-  const closeSession = (closingAmountBOB: number) => {
-    setSession((previous) => ({
-      ...previous,
-      isOpen: false,
-      closedAt: nowISO(),
-      closingAmountBOB,
-    }));
+  const invalidatePayables = () => {
+    void utils.cash.listPayables.invalidate();
+    invalidateEntries();
   };
 
-  const addCashEntry = (input: CashEntryInput) => {
-    const newEntry: CashEntry = {
-      ...input,
-      id: crypto.randomUUID(),
-      createdAt: nowISO(),
-      isCancelled: false,
-    };
+  const openSessionMutation = trpc.cash.openSession.useMutation({ onSuccess: invalidateSession });
+  const closeSessionMutation = trpc.cash.closeSession.useMutation({ onSuccess: invalidateSession });
+  const addEntryMutation = trpc.cash.addEntry.useMutation({ onSuccess: invalidateEntries });
+  const cancelEntryMutation = trpc.cash.cancelEntry.useMutation({ onSuccess: invalidateEntries });
+  const addPartnerDistributionMutation = trpc.cash.addPartnerDistribution.useMutation({
+    onSuccess: invalidateEntries,
+  });
+  const createPayableMutation = trpc.cash.createPayable.useMutation({ onSuccess: invalidatePayables });
+  const addPayablePaymentMutation = trpc.cash.addPayablePayment.useMutation({
+    onSuccess: invalidatePayables,
+  });
 
-    setEntries((previous) => [newEntry, ...previous]);
-  };
+  const allEntries = useMemo(() => (rawEntries ?? []).map(toEntry), [rawEntries]);
 
-  const addPartnerDistribution = (input: PartnerDistributionInput) => {
-    addCashEntry({
-      type: "expense",
-      category: "partner_distribution",
-      description: `Distribución a socio: ${input.partnerName}`,
-      method: input.method,
-      accountDestination: input.accountDestination,
-      amountBOB: input.amountBOB,
-    });
-  };
+  const entries = useMemo(
+    () =>
+      allEntries.filter((entry) => {
+        if (entryFilters.type !== ALL_CASH_ENTRY_TYPES_OPTION && entry.type !== entryFilters.type) {
+          return false;
+        }
 
-  const createPayable = (input: PayableInput) => {
-    const newPayable: Payable = {
-      ...input,
-      id: crypto.randomUUID(),
-      payments: [],
-    };
+        if (
+          entryFilters.category !== ALL_CASH_ENTRY_CATEGORIES_OPTION &&
+          entry.category !== entryFilters.category
+        ) {
+          return false;
+        }
 
-    setPayables((previous) => [newPayable, ...previous]);
-  };
+        if (entryFilters.method !== ALL_PAYMENT_METHODS_OPTION && entry.method !== entryFilters.method) {
+          return false;
+        }
 
-  const addPayablePayment = (payableId: string, payment: PayablePaymentInput) => {
-    const newPayment: PayablePayment = {
-      id: crypto.randomUUID(),
-      date: payment.date,
-      amountBOB: payment.amountBOB,
-      method: payment.method,
-      destination: payment.destination,
-    };
+        if (entryFilters.date && !entry.createdAt.startsWith(entryFilters.date)) {
+          return false;
+        }
 
-    setPayables((previous) =>
-      previous.map((payable) =>
-        payable.id === payableId
-          ? { ...payable, payments: [...payable.payments, newPayment] }
-          : payable,
-      ),
-    );
-  };
+        return true;
+      }),
+    [allEntries, entryFilters],
+  );
 
-  const filteredEntries = useMemo(() => {
-    return entries.filter((entry) => {
-      if (entryFilters.type !== ALL_CASH_ENTRY_TYPES_OPTION && entry.type !== entryFilters.type) {
-        return false;
-      }
+  const destinationBalances = useMemo<DestinationBalance[]>(
+    () => (rawWhereIsTheMoney ?? []).map((row) => ({ destination: row.destination, balanceBOB: row.total })),
+    [rawWhereIsTheMoney],
+  );
 
-      if (
-        entryFilters.category !== ALL_CASH_ENTRY_CATEGORIES_OPTION &&
-        entry.category !== entryFilters.category
-      ) {
-        return false;
-      }
+  const totalCashBalanceBOB = useMemo(
+    () => destinationBalances.reduce((sum, balance) => sum + balance.balanceBOB, 0),
+    [destinationBalances],
+  );
 
-      if (
-        entryFilters.method !== ALL_PAYMENT_METHODS_OPTION &&
-        entry.method !== entryFilters.method
-      ) {
-        return false;
-      }
+  const payables = useMemo(() => {
+    const mapped = (rawPayables ?? []).map(toPayable);
 
-      if (entryFilters.date && !entry.createdAt.startsWith(entryFilters.date)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [entries, entryFilters]);
-
-  const filteredPayables = useMemo(() => {
-    return payables.filter((payable) => {
+    return mapped.filter((payable) => {
       if (
         payableFilters.creditorType !== ALL_CREDITOR_TYPES_OPTION &&
         payable.creditorType !== payableFilters.creditorType
@@ -225,31 +308,107 @@ export function useCash(): UseCashResult {
         return false;
       }
 
-      if (
-        payableFilters.status !== ALL_PAYABLE_STATUSES_OPTION &&
-        getPayableStatus(payable) !== payableFilters.status
-      ) {
+      if (payableFilters.status !== ALL_PAYABLE_STATUSES_OPTION && payable.status !== payableFilters.status) {
         return false;
       }
 
       return true;
     });
-  }, [payables, payableFilters]);
+  }, [rawPayables, payableFilters]);
+
+  const openSession = () => {
+    openSessionMutation.mutate();
+  };
+
+  const closeSession = (closingAmountBOB: number) => {
+    if (!session) {
+      return;
+    }
+
+    closeSessionMutation.mutate({ sessionId: session.id, closingAmount: closingAmountBOB });
+  };
+
+  const addCashEntry = (input: CashEntryInput) => {
+    addEntryMutation.mutate({
+      type: input.type,
+      category: input.category,
+      description: input.description,
+      paymentMethod: input.method,
+      accountDestination: input.accountDestination,
+      amount: input.amountBOB,
+    });
+  };
+
+  const cancelEntry = (entryId: string) => {
+    cancelEntryMutation.mutate({ id: entryId });
+  };
+
+  const addPartnerDistribution = (input: PartnerDistributionInput) => {
+    addPartnerDistributionMutation.mutate({
+      partnerName: input.partnerName,
+      amount: input.amountBOB,
+      paymentMethod: input.method,
+      accountDestination: input.accountDestination,
+    });
+  };
+
+  const createPayable = (input: PayableInput) => {
+    createPayableMutation.mutate({
+      creditorType: input.creditorType,
+      supplierId: input.supplierId ?? undefined,
+      creditorName: input.creditorName,
+      amount: input.amountBOB,
+      dueDate: input.dueDate || undefined,
+      category: input.category || undefined,
+      invoiceNumber: input.invoiceNumber || undefined,
+      notes: input.notes || undefined,
+    });
+  };
+
+  const addPayablePayment = (payableId: string, payment: PayablePaymentInput) => {
+    addPayablePaymentMutation.mutate({
+      payableId,
+      amount: payment.amountBOB,
+      paymentMethod: payment.method,
+      destination: payment.destination || undefined,
+    });
+  };
 
   return {
     session,
     openSession,
     closeSession,
-    entries: filteredEntries,
-    allEntries: entries,
+    entries,
+    destinationBalances,
+    totalCashBalanceBOB,
     entryFilters,
     setEntryFilters,
     addCashEntry,
+    cancelEntry,
     addPartnerDistribution,
-    payables: filteredPayables,
+    payables,
     payableFilters,
     setPayableFilters,
     createPayable,
     addPayablePayment,
   };
+}
+
+export function usePayablePayments(payableId: string | null): PayablePaymentView[] {
+  const { data } = trpc.cash.getPayablePayments.useQuery(
+    { payableId: payableId ?? "" },
+    { enabled: payableId !== null },
+  );
+
+  return useMemo<PayablePaymentView[]>(
+    () =>
+      (data ?? []).map((payment) => ({
+        id: payment.id,
+        date: String(payment.paidAt),
+        amountBOB: Number(payment.amount),
+        method: payment.paymentMethod as PaymentMethod,
+        destination: payment.destination ?? "",
+      })),
+    [data],
+  );
 }

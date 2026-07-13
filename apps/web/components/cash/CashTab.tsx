@@ -7,9 +7,11 @@ import { useState } from "react";
 import type {
   CashEntryFilterState,
   CashEntryInput,
+  CashEntryView,
+  CashSessionView,
+  DestinationBalance,
   PartnerDistributionInput,
 } from "@/hooks/use-cash";
-import type { CashEntry, CashSession } from "@/lib/mocks/cash.mock";
 
 import { AddCashEntryDialog } from "./AddCashEntryDialog";
 import { CashEntryFilters } from "./CashEntryFilters";
@@ -19,15 +21,19 @@ import { PartnerDistributionDialog } from "./PartnerDistributionDialog";
 import { WhereIsTheMoneyCard } from "./WhereIsTheMoneyCard";
 
 interface CashTabProps {
-  session: CashSession;
+  session: CashSessionView | null;
   onOpenSession: () => void;
   onCloseSession: (closingAmountBOB: number) => void;
-  entries: CashEntry[];
-  allEntries: CashEntry[];
+  entries: CashEntryView[];
+  destinationBalances: DestinationBalance[];
+  totalCashBalanceBOB: number;
   entryFilters: CashEntryFilterState;
   onEntryFiltersChange: (filters: Partial<CashEntryFilterState>) => void;
   onAddEntry: (input: CashEntryInput) => void;
+  onCancelEntry: (entryId: string) => void;
   onAddPartnerDistribution: (input: PartnerDistributionInput) => void;
+  canCreate: boolean;
+  canCancel: boolean;
 }
 
 export function CashTab({
@@ -35,39 +41,52 @@ export function CashTab({
   onOpenSession,
   onCloseSession,
   entries,
-  allEntries,
+  destinationBalances,
+  totalCashBalanceBOB,
   entryFilters,
   onEntryFiltersChange,
   onAddEntry,
+  onCancelEntry,
   onAddPartnerDistribution,
+  canCreate,
+  canCancel,
 }: CashTabProps) {
   const [isAddEntryDialogOpen, setIsAddEntryDialogOpen] = useState(false);
   const [isPartnerDialogOpen, setIsPartnerDialogOpen] = useState(false);
+
+  const canAddMovement = canCreate && session?.isOpen === true;
 
   return (
     <div className="flex flex-col gap-6">
       <CashSessionHeader session={session} onOpenSession={onOpenSession} onCloseSession={onCloseSession} />
 
-      <WhereIsTheMoneyCard entries={allEntries} />
+      <WhereIsTheMoneyCard destinationBalances={destinationBalances} totalBOB={totalCashBalanceBOB} />
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <CashEntryFilters filters={entryFilters} onFiltersChange={onEntryFiltersChange} />
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsPartnerDialogOpen(true)}>
-            <Users className="size-4" />
-            Distribución a socio
-          </Button>
-          <Button
-            className="bg-brand text-brand-foreground hover:bg-brand/90"
-            onClick={() => setIsAddEntryDialogOpen(true)}
-          >
-            <Plus className="size-4" />
-            Nuevo movimiento
-          </Button>
-        </div>
+        {canCreate ? (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={!canAddMovement}
+              onClick={() => setIsPartnerDialogOpen(true)}
+            >
+              <Users className="size-4" />
+              Distribución a socio
+            </Button>
+            <Button
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+              disabled={!canAddMovement}
+              onClick={() => setIsAddEntryDialogOpen(true)}
+            >
+              <Plus className="size-4" />
+              Nuevo movimiento
+            </Button>
+          </div>
+        ) : null}
       </div>
 
-      <CashEntryTable entries={entries} />
+      <CashEntryTable entries={entries} canCancel={canCancel} onCancelEntry={onCancelEntry} />
 
       <AddCashEntryDialog
         open={isAddEntryDialogOpen}

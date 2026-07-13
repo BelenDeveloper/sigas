@@ -12,18 +12,15 @@ import {
 import { ChevronDown, ChevronRight, CreditCard } from "lucide-react";
 import { Fragment, useState } from "react";
 
+import { usePayablePayments, type PayableView } from "@/hooks/use-cash";
+import { CREDITOR_TYPE_LABELS } from "@/lib/cash-types";
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import { CREDITOR_TYPE_LABELS, type Payable } from "@/lib/mocks/cash.mock";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payment-method";
-import {
-  getPayablePaidBOB,
-  getPayablePendingBOB,
-  getPayableStatus,
-} from "@/lib/payable-helpers";
 
 import { PayableStatusBadge } from "./PayableStatusBadge";
 
 const NO_PAYABLES_MESSAGE = "No se encontraron cuentas por pagar con estos filtros.";
+const NO_PAYMENTS_MESSAGE = "Todavía no se registraron pagos.";
 const DATE_LOCALE = "es-BO";
 
 function formatDate(isoDate: string): string {
@@ -35,12 +32,14 @@ function formatDate(isoDate: string): string {
 }
 
 interface PayableTableProps {
-  payables: Payable[];
-  onAddPayment: (payable: Payable) => void;
+  payables: PayableView[];
+  canAddPayment: boolean;
+  onAddPayment: (payable: PayableView) => void;
 }
 
-export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
+export function PayableTable({ payables, canAddPayment, onAddPayment }: PayableTableProps) {
   const [expandedPayableId, setExpandedPayableId] = useState<string | null>(null);
+  const payments = usePayablePayments(expandedPayableId);
 
   const toggleExpanded = (payableId: string) => {
     setExpandedPayableId((previous) => (previous === payableId ? null : payableId));
@@ -70,9 +69,6 @@ export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
           </TableRow>
         ) : (
           payables.map((payable) => {
-            const paidBOB = getPayablePaidBOB(payable);
-            const pendingBOB = getPayablePendingBOB(payable);
-            const status = getPayableStatus(payable);
             const isExpanded = expandedPayableId === payable.id;
 
             return (
@@ -88,24 +84,26 @@ export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
                   <TableCell className="font-medium text-foreground">{payable.creditorName}</TableCell>
                   <TableCell>{CREDITOR_TYPE_LABELS[payable.creditorType]}</TableCell>
                   <TableCell>{formatCurrencyBOB(payable.amountBOB)}</TableCell>
-                  <TableCell>{formatCurrencyBOB(paidBOB)}</TableCell>
-                  <TableCell>{formatCurrencyBOB(pendingBOB)}</TableCell>
-                  <TableCell>{formatDate(payable.dueDate)}</TableCell>
+                  <TableCell>{formatCurrencyBOB(payable.paidBOB)}</TableCell>
+                  <TableCell>{formatCurrencyBOB(payable.pendingBOB)}</TableCell>
+                  <TableCell>{payable.dueDate ? formatDate(payable.dueDate) : "—"}</TableCell>
                   <TableCell>
-                    <PayableStatusBadge status={status} />
+                    <PayableStatusBadge status={payable.status} />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Agregar pago"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onAddPayment(payable);
-                      }}
-                    >
-                      <CreditCard className="size-4" />
-                    </Button>
+                    {canAddPayment ? (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Agregar pago"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onAddPayment(payable);
+                        }}
+                      >
+                        <CreditCard className="size-4" />
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
 
@@ -115,7 +113,7 @@ export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
                       <div className="flex flex-col gap-3 py-2">
                         <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
                           <span className="text-muted-foreground">
-                            Categoría: <span className="text-foreground">{payable.category}</span>
+                            Categoría: <span className="text-foreground">{payable.category || "—"}</span>
                           </span>
                           <span className="text-muted-foreground">
                             N° de factura:{" "}
@@ -126,7 +124,7 @@ export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
                           </span>
                         </div>
 
-                        {payable.payments.length > 0 ? (
+                        {payments.length > 0 ? (
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -137,7 +135,7 @@ export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {payable.payments.map((payment) => (
+                              {payments.map((payment) => (
                                 <TableRow key={payment.id}>
                                   <TableCell>{formatDate(payment.date)}</TableCell>
                                   <TableCell>{formatCurrencyBOB(payment.amountBOB)}</TableCell>
@@ -148,7 +146,7 @@ export function PayableTable({ payables, onAddPayment }: PayableTableProps) {
                             </TableBody>
                           </Table>
                         ) : (
-                          <p className="text-sm text-muted-foreground">Todavía no se registraron pagos.</p>
+                          <p className="text-sm text-muted-foreground">{NO_PAYMENTS_MESSAGE}</p>
                         )}
                       </div>
                     </TableCell>
