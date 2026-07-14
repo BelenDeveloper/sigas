@@ -76,6 +76,8 @@ interface UseInventoryResult {
   createProduct: (input: ProductInput) => void;
   updateProduct: (productId: string, input: ProductInput) => void;
   adjustStock: (productId: string, quantityDelta: number, reason: string) => void;
+  isLoading: boolean;
+  isMovementsLoading: boolean;
 }
 
 function toProductInput(input: ProductInput) {
@@ -248,5 +250,7 @@ export function useInventory(): UseInventoryResult {
     createProduct,
     updateProduct,
     adjustStock,
+    isLoading: rawAllProducts === undefined,
+    isMovementsLoading: rawMovements === undefined,
   };
 }

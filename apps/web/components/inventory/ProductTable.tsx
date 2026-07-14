@@ -19,13 +19,16 @@ import {
 } from "@/lib/inventory-types";
 
 import { LowStockBadge } from "./LowStockBadge";
+import { TableSkeleton } from "../shared/TableSkeleton";
 
 const ACTIVE_LABEL = "Activo";
 const INACTIVE_LABEL = "Inactivo";
 const NO_PRODUCTS_MESSAGE = "No se encontraron productos con estos filtros.";
+const COLUMN_COUNT = 9;
 
 interface ProductTableProps {
   products: Product[];
+  isLoading: boolean;
   categories: ProductCategory[];
   subcategories: ProductSubcategory[];
   onEdit: (product: Product) => void;
@@ -34,6 +37,7 @@ interface ProductTableProps {
 
 export function ProductTable({
   products,
+  isLoading,
   categories,
   subcategories,
   onEdit,
@@ -61,9 +65,11 @@ export function ProductTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {products.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : products.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={9} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_PRODUCTS_MESSAGE}
             </TableCell>
           </TableRow>

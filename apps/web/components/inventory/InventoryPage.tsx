@@ -38,6 +38,8 @@ export function InventoryPage() {
     createProduct,
     updateProduct,
     adjustStock,
+    isLoading,
+    isMovementsLoading,
   } = useInventory();
 
   const [productFormOpen, setProductFormOpen] = useState(false);
@@ -93,6 +95,7 @@ export function InventoryPage() {
 
           <ProductTable
             products={products}
+            isLoading={isLoading}
             categories={categories}
             subcategories={subcategories}
             onEdit={handleEditProduct}
@@ -105,7 +108,7 @@ export function InventoryPage() {
             filters={stockMovementFilters}
             onFiltersChange={setStockMovementFilters}
           />
-          <StockMovementTable movements={stockMovements} />
+          <StockMovementTable movements={stockMovements} isLoading={isMovementsLoading} />
         </TabsContent>
       </Tabs>
 

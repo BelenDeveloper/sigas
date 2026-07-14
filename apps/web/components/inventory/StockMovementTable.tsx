@@ -10,7 +10,10 @@ import {
 
 import type { StockMovement, StockMovementType } from "@/lib/inventory-types";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
+
 const NO_MOVEMENTS_MESSAGE = "No se encontraron movimientos con estos filtros.";
+const COLUMN_COUNT = 8;
 
 const MOVEMENT_TYPE_LABELS: Record<StockMovementType, string> = {
   IN: "Entrada",
@@ -36,9 +39,10 @@ function formatMovementDate(isoDate: string): string {
 
 interface StockMovementTableProps {
   movements: StockMovement[];
+  isLoading: boolean;
 }
 
-export function StockMovementTable({ movements }: StockMovementTableProps) {
+export function StockMovementTable({ movements, isLoading }: StockMovementTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -54,9 +58,11 @@ export function StockMovementTable({ movements }: StockMovementTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {movements.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : movements.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_MOVEMENTS_MESSAGE}
             </TableCell>
           </TableRow>
