@@ -30,6 +30,7 @@ interface UseDashboardResult {
   lowStockProducts: LowStockProduct[];
   pendingPayments: PendingPayment[];
   projectsByCompany: CompanyProjects[];
+  isLoading: boolean;
 }
 
 export function useDashboard(): UseDashboardResult {
@@ -54,5 +55,6 @@ export function useDashboard(): UseDashboardResult {
     lowStockProducts: MOCK_LOW_STOCK_PRODUCTS,
     pendingPayments: MOCK_PENDING_PAYMENTS,
     projectsByCompany,
+    isLoading: false,
   };
 }

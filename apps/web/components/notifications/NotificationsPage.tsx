@@ -7,7 +7,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { NotificationList } from "./NotificationList";
 
 export function NotificationsPage() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading } = useNotifications();
 
   return (
     <div className="flex flex-col gap-6">
@@ -17,7 +17,7 @@ export function NotificationsPage() {
         </Button>
       </div>
 
-      <NotificationList notifications={notifications} onRead={markAsRead} />
+      <NotificationList notifications={notifications} onRead={markAsRead} isLoading={isLoading} />
     </div>
   );
 }

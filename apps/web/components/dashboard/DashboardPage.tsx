@@ -24,6 +24,7 @@ export function DashboardPage() {
     lowStockProducts,
     pendingPayments,
     projectsByCompany,
+    isLoading,
   } = useDashboard();
 
   return (
@@ -76,11 +77,11 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <LowStockList products={lowStockProducts} />
-        <ProjectsByCompanyList companies={projectsByCompany} />
+        <LowStockList products={lowStockProducts} isLoading={isLoading} />
+        <ProjectsByCompanyList companies={projectsByCompany} isLoading={isLoading} />
       </div>
 
-      <PendingPaymentsList payments={pendingPayments} />
+      <PendingPaymentsList payments={pendingPayments} isLoading={isLoading} />
     </div>
   );
 }

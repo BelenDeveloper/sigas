@@ -14,6 +14,7 @@ interface UseNotificationsResult {
   unreadCount: number;
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
+  isLoading: boolean;
 }
 
 export function useNotifications(): UseNotificationsResult {
@@ -44,5 +45,6 @@ export function useNotifications(): UseNotificationsResult {
     unreadCount,
     markAsRead,
     markAllAsRead,
+    isLoading: false,
   };
 }
