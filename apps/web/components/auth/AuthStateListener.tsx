@@ -1,5 +1,6 @@
 "use client";
 
+import { TRPCClientError } from "@trpc/client";
 import { useSetAtom } from "jotai";
 import { useEffect } from "react";
 
@@ -37,9 +38,15 @@ export function AuthStateListener({ children }: AuthStateListenerProps) {
         .then((user) => {
           setAuthUser(user);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           setAuthUser(null);
-          void supabase.auth.signOut();
+
+          const isUnauthorized =
+            error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED";
+
+          if (isUnauthorized) {
+            void supabase.auth.signOut();
+          }
         })
         .finally(() => {
           setIsAuthLoading(false);
