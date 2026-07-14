@@ -13,18 +13,22 @@ import { Pencil, Power } from "lucide-react";
 import { ADMIN_USER_ROLE_LABELS, type AdminUser } from "@/lib/user-permissions";
 import { formatModuleAccessSummary } from "@/lib/permission-helpers";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
+
 const NO_USERS_MESSAGE = "No se encontraron usuarios.";
 const ACTIVE_LABEL = "Activo";
 const INACTIVE_LABEL = "Inactivo";
 const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
+const COLUMN_COUNT = 6;
 
 interface UserTableProps {
   users: AdminUser[];
+  isLoading: boolean;
   onEdit: (user: AdminUser) => void;
   onToggleActive: (user: AdminUser) => void;
 }
 
-export function UserTable({ users, onEdit, onToggleActive }: UserTableProps) {
+export function UserTable({ users, isLoading, onEdit, onToggleActive }: UserTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -38,9 +42,11 @@ export function UserTable({ users, onEdit, onToggleActive }: UserTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {users.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : users.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_USERS_MESSAGE}
             </TableCell>
           </TableRow>

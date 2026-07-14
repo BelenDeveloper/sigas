@@ -20,6 +20,7 @@ interface UseCompaniesResult {
   createCompany: (input: CompanyInput) => void;
   updateCompany: (companyId: string, input: CompanyInput) => void;
   updateCompanyAccess: (companyId: string, accessList: UserAccessInput[]) => Promise<void>;
+  isLoading: boolean;
 }
 
 export function useCompanies(): UseCompaniesResult {
@@ -60,5 +61,11 @@ export function useCompanies(): UseCompaniesResult {
     await utils.companies.getAccessList.invalidate({ companyId });
   };
 
-  return { companies: data ?? [], createCompany, updateCompany, updateCompanyAccess };
+  return {
+    companies: data ?? [],
+    createCompany,
+    updateCompany,
+    updateCompanyAccess,
+    isLoading: data === undefined,
+  };
 }

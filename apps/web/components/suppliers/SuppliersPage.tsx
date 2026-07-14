@@ -25,8 +25,15 @@ export function SuppliersPage() {
   const canEditSupplier = hasModulePermission(authUser, SUPPLIERS_MODULE, "canEdit");
   const canToggleActive = authUser?.role === ADMIN_ROLE;
 
-  const { suppliers, searchTerm, setSearchTerm, createSupplier, updateSupplier, toggleSupplierActive } =
-    useSuppliers();
+  const {
+    suppliers,
+    searchTerm,
+    setSearchTerm,
+    createSupplier,
+    updateSupplier,
+    toggleSupplierActive,
+    isLoading,
+  } = useSuppliers();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -67,6 +74,7 @@ export function SuppliersPage() {
 
       <SupplierTable
         suppliers={suppliers}
+        isLoading={isLoading}
         canEdit={canEditSupplier}
         canToggleActive={canToggleActive}
         onEdit={handleEditSupplier}

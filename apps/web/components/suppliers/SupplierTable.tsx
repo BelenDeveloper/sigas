@@ -12,13 +12,17 @@ import { Pencil, Power } from "lucide-react";
 
 import type { Supplier } from "@/lib/supplier-types";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
+
 const NO_SUPPLIERS_MESSAGE = "No se encontraron proveedores con estos filtros.";
 const ACTIVE_LABEL = "Activo";
 const INACTIVE_LABEL = "Inactivo";
 const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
+const COLUMN_COUNT = 8;
 
 interface SupplierTableProps {
   suppliers: Supplier[];
+  isLoading: boolean;
   canEdit: boolean;
   canToggleActive: boolean;
   onEdit: (supplier: Supplier) => void;
@@ -27,6 +31,7 @@ interface SupplierTableProps {
 
 export function SupplierTable({
   suppliers,
+  isLoading,
   canEdit,
   canToggleActive,
   onEdit,
@@ -47,9 +52,11 @@ export function SupplierTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {suppliers.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : suppliers.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_SUPPLIERS_MESSAGE}
             </TableCell>
           </TableRow>

@@ -17,6 +17,7 @@ interface UseUsersResult {
   createUser: (profile: UserProfileInput, permissions: ModulePermission[]) => void;
   updateUser: (userId: string, profile: UserProfileUpdateInput, permissions: ModulePermission[]) => void;
   toggleUserActive: (userId: string) => void;
+  isLoading: boolean;
 }
 
 export function useUsers(): UseUsersResult {
@@ -56,5 +57,5 @@ export function useUsers(): UseUsersResult {
     toggleActiveMutation.mutate({ id: userId });
   };
 
-  return { users: data ?? [], createUser, updateUser, toggleUserActive };
+  return { users: data ?? [], createUser, updateUser, toggleUserActive, isLoading: data === undefined };
 }

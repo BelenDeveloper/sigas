@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@repo/ui/components/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/components/ui/card";
+import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { useAtomValue } from "jotai";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -16,12 +18,13 @@ import { CompanyFormDialog } from "./CompanyFormDialog";
 
 const ADMIN_ROLE = "admin";
 const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
+const SKELETON_CARD_COUNT = 6;
 
 export function CompaniesPage() {
   const authUser = useAtomValue(authUserAtom);
   const isAdmin = authUser?.role === ADMIN_ROLE;
 
-  const { companies, createCompany, updateCompany, updateCompanyAccess } = useCompanies();
+  const { companies, createCompany, updateCompany, updateCompanyAccess, isLoading } = useCompanies();
   const { users } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -58,14 +61,31 @@ export function CompaniesPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {companies.map((company) => (
-          <CompanyCard
-            key={company.id}
-            company={company}
-            onEdit={handleEditCompany}
-            onManageAccess={handleManageAccess}
-          />
-        ))}
+        {isLoading
+          ? Array.from({ length: SKELETON_CARD_COUNT }).map((_, index) => (
+              <Card key={index}>
+                <CardHeader className="flex flex-row items-start justify-between gap-4">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-16" />
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-24" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-8 w-32" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          : companies.map((company) => (
+              <CompanyCard
+                key={company.id}
+                company={company}
+                onEdit={handleEditCompany}
+                onManageAccess={handleManageAccess}
+              />
+            ))}
       </div>
 
       <CompanyFormDialog
