@@ -13,6 +13,7 @@ import { authUserAtom } from "@/lib/atoms/auth.atom";
 import { hasModulePermission } from "@/lib/permission-helpers";
 import { PROJECT_CATEGORY_LABELS } from "@/lib/project-types";
 
+import { DetailPageSkeleton } from "../shared/DetailPageSkeleton";
 import { ChangeStageDialog } from "./ChangeStageDialog";
 import { DocumentsTab } from "./DocumentsTab";
 import { FinanceTab } from "./FinanceTab";
@@ -57,7 +58,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   }
 
   if (isLoading) {
-    return null;
+    return <DetailPageSkeleton />;
   }
 
   if (!project) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@repo/ui/components/ui/button";
+import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import { useAtomValue } from "jotai";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -24,7 +25,7 @@ export function ProjectsPage() {
   const canViewProjects = hasModulePermission(authUser, PROJECTS_MODULE, "canView");
   const canCreateProject = hasModulePermission(authUser, PROJECTS_MODULE, "canCreate");
 
-  const { projects, filters, setFilters, createProject } = useProjects();
+  const { projects, filters, setFilters, createProject, isLoading } = useProjects();
   const { companies } = useCompanies();
   const { clients } = useClients();
 
@@ -49,7 +50,13 @@ export function ProjectsPage() {
         ) : null}
       </div>
 
-      {projects.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-40 w-full" />
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
         <p className="text-center text-muted-foreground">{NO_PROJECTS_MESSAGE}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
