@@ -15,13 +15,17 @@ import { useRouter } from "next/navigation";
 
 import { CLIENT_DOCUMENT_TYPE_LABELS, type Client } from "@/lib/client-types";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
+
 const NO_CLIENTS_MESSAGE = "No se encontraron clientes con estos filtros.";
 const ACTIVE_LABEL = "Activo";
 const INACTIVE_LABEL = "Inactivo";
 const ACTIVE_BADGE_CLASSES = "bg-emerald-100 text-emerald-800";
+const COLUMN_COUNT = 7;
 
 interface ClientTableProps {
   clients: Client[];
+  isLoading: boolean;
   canEdit: boolean;
   canToggleActive: boolean;
   onEdit: (client: Client) => void;
@@ -30,6 +34,7 @@ interface ClientTableProps {
 
 export function ClientTable({
   clients,
+  isLoading,
   canEdit,
   canToggleActive,
   onEdit,
@@ -55,9 +60,11 @@ export function ClientTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {clients.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : clients.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_CLIENTS_MESSAGE}
             </TableCell>
           </TableRow>

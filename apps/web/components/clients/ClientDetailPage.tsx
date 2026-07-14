@@ -9,6 +9,8 @@ import Link from "next/link";
 import { useClients } from "@/hooks/use-clients";
 import { CLIENT_DOCUMENT_TYPE_LABELS } from "@/lib/client-types";
 
+import { DetailPageSkeleton } from "../shared/DetailPageSkeleton";
+
 const CLIENT_NOT_FOUND_MESSAGE = "No se encontró el cliente solicitado.";
 const CLIENTS_ROUTE = "/clients";
 const ACTIVE_LABEL = "Activo";
@@ -24,7 +26,7 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
   const client = getClientById(clientId);
 
   if (isLoading) {
-    return null;
+    return <DetailPageSkeleton />;
   }
 
   if (!client) {

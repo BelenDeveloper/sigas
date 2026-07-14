@@ -26,8 +26,16 @@ export function ClientsPage() {
   const canEditClient = hasModulePermission(authUser, CLIENTS_MODULE, "canEdit");
   const canToggleActive = authUser?.role === ADMIN_ROLE;
 
-  const { clients, cities, filters, setFilters, createClient, updateClient, toggleClientActive } =
-    useClients();
+  const {
+    clients,
+    cities,
+    filters,
+    setFilters,
+    createClient,
+    updateClient,
+    toggleClientActive,
+    isLoading,
+  } = useClients();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -70,6 +78,7 @@ export function ClientsPage() {
 
       <ClientTable
         clients={clients}
+        isLoading={isLoading}
         canEdit={canEditClient}
         canToggleActive={canToggleActive}
         onEdit={handleEditClient}
