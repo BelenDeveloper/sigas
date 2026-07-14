@@ -25,6 +25,7 @@ interface CashTabProps {
   onOpenSession: () => void;
   onCloseSession: (closingAmountBOB: number) => void;
   entries: CashEntryView[];
+  isLoading: boolean;
   destinationBalances: DestinationBalance[];
   totalCashBalanceBOB: number;
   entryFilters: CashEntryFilterState;
@@ -41,6 +42,7 @@ export function CashTab({
   onOpenSession,
   onCloseSession,
   entries,
+  isLoading,
   destinationBalances,
   totalCashBalanceBOB,
   entryFilters,
@@ -86,7 +88,12 @@ export function CashTab({
         ) : null}
       </div>
 
-      <CashEntryTable entries={entries} canCancel={canCancel} onCancelEntry={onCancelEntry} />
+      <CashEntryTable
+        entries={entries}
+        isLoading={isLoading}
+        canCancel={canCancel}
+        onCancelEntry={onCancelEntry}
+      />
 
       <AddCashEntryDialog
         open={isAddEntryDialogOpen}

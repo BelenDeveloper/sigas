@@ -202,11 +202,13 @@ interface UseCashResult {
   addCashEntry: (input: CashEntryInput) => void;
   cancelEntry: (entryId: string) => void;
   addPartnerDistribution: (input: PartnerDistributionInput) => void;
+  isLoading: boolean;
   payables: PayableView[];
   payableFilters: PayableFilterState;
   setPayableFilters: (filters: Partial<PayableFilterState>) => void;
   createPayable: (input: PayableInput) => void;
   addPayablePayment: (payableId: string, payment: PayablePaymentInput) => void;
+  isLoadingPayables: boolean;
 }
 
 export function useCash(): UseCashResult {
@@ -386,11 +388,13 @@ export function useCash(): UseCashResult {
     addCashEntry,
     cancelEntry,
     addPartnerDistribution,
+    isLoading: rawEntries === undefined,
     payables,
     payableFilters,
     setPayableFilters,
     createPayable,
     addPayablePayment,
+    isLoadingPayables: rawPayables === undefined,
   };
 }
 

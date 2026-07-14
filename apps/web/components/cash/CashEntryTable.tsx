@@ -15,6 +15,8 @@ import { CASH_ENTRY_CATEGORY_LABELS, type CashEntryType } from "@/lib/cash-types
 import { formatCurrencyBOB } from "@/lib/format-currency";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payment-method";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
+
 const NO_ENTRIES_MESSAGE = "No se encontraron movimientos con estos filtros.";
 const TIME_LOCALE = "es-BO";
 
@@ -37,11 +39,14 @@ function formatTime(isoDateTime: string): string {
 
 interface CashEntryTableProps {
   entries: CashEntryView[];
+  isLoading: boolean;
   canCancel: boolean;
   onCancelEntry: (entryId: string) => void;
 }
 
-export function CashEntryTable({ entries, canCancel, onCancelEntry }: CashEntryTableProps) {
+export function CashEntryTable({ entries, isLoading, canCancel, onCancelEntry }: CashEntryTableProps) {
+  const columnCount = canCancel ? 8 : 7;
+
   return (
     <Table>
       <TableHeader>
@@ -57,9 +62,11 @@ export function CashEntryTable({ entries, canCancel, onCancelEntry }: CashEntryT
         </TableRow>
       </TableHeader>
       <TableBody>
-        {entries.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={columnCount} />
+        ) : entries.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={canCancel ? 8 : 7} className="text-center text-muted-foreground">
+            <TableCell colSpan={columnCount} className="text-center text-muted-foreground">
               {NO_ENTRIES_MESSAGE}
             </TableCell>
           </TableRow>

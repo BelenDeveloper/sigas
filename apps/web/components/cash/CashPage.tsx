@@ -41,6 +41,7 @@ export function CashPage() {
           onOpenSession={cash.openSession}
           onCloseSession={cash.closeSession}
           entries={cash.entries}
+          isLoading={cash.isLoading}
           destinationBalances={cash.destinationBalances}
           totalCashBalanceBOB={cash.totalCashBalanceBOB}
           entryFilters={cash.entryFilters}
@@ -56,6 +57,7 @@ export function CashPage() {
       <TabsContent value="payable" className="flex flex-col gap-6">
         <AccountsPayableTab
           payables={cash.payables}
+          isLoading={cash.isLoadingPayables}
           filters={cash.payableFilters}
           onFiltersChange={cash.setPayableFilters}
           suppliers={suppliers}

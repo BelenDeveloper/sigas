@@ -19,6 +19,8 @@ import { PAYMENT_METHOD_LABELS } from "@/lib/payment-method";
 
 import { PayableStatusBadge } from "./PayableStatusBadge";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
+
 const NO_PAYABLES_MESSAGE = "No se encontraron cuentas por pagar con estos filtros.";
 const NO_PAYMENTS_MESSAGE = "Todavía no se registraron pagos.";
 const DATE_LOCALE = "es-BO";
@@ -31,13 +33,16 @@ function formatDate(isoDate: string): string {
   });
 }
 
+const COLUMN_COUNT = 9;
+
 interface PayableTableProps {
   payables: PayableView[];
+  isLoading: boolean;
   canAddPayment: boolean;
   onAddPayment: (payable: PayableView) => void;
 }
 
-export function PayableTable({ payables, canAddPayment, onAddPayment }: PayableTableProps) {
+export function PayableTable({ payables, isLoading, canAddPayment, onAddPayment }: PayableTableProps) {
   const [expandedPayableId, setExpandedPayableId] = useState<string | null>(null);
   const payments = usePayablePayments(expandedPayableId);
 
@@ -61,9 +66,11 @@ export function PayableTable({ payables, canAddPayment, onAddPayment }: PayableT
         </TableRow>
       </TableHeader>
       <TableBody>
-        {payables.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : payables.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={9} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_PAYABLES_MESSAGE}
             </TableCell>
           </TableRow>

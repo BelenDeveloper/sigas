@@ -14,6 +14,7 @@ import { PayableTable } from "./PayableTable";
 
 interface AccountsPayableTabProps {
   payables: PayableView[];
+  isLoading: boolean;
   filters: PayableFilterState;
   onFiltersChange: (filters: Partial<PayableFilterState>) => void;
   suppliers: Supplier[];
@@ -25,6 +26,7 @@ interface AccountsPayableTabProps {
 
 export function AccountsPayableTab({
   payables,
+  isLoading,
   filters,
   onFiltersChange,
   suppliers,
@@ -57,7 +59,12 @@ export function AccountsPayableTab({
         ) : null}
       </div>
 
-      <PayableTable payables={payables} canAddPayment={canEdit} onAddPayment={handleAddPayment} />
+      <PayableTable
+        payables={payables}
+        isLoading={isLoading}
+        canAddPayment={canEdit}
+        onAddPayment={handleAddPayment}
+      />
 
       <AddPayableDialog
         open={isPayableDialogOpen}
