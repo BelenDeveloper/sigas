@@ -20,3 +20,7 @@ export async function uploadProjectFile(file: File, getUploadUrl: GetProjectUplo
 
   return path;
 }
+
+export function getProjectFileUrl(path: string): string {
+  return supabase.storage.from(PROJECT_FILES_BUCKET).getPublicUrl(path).data.publicUrl;
+}
