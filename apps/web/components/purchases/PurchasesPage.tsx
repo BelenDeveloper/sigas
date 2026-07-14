@@ -21,7 +21,7 @@ export function PurchasesPage() {
   const canViewPurchases = hasModulePermission(authUser, PURCHASES_MODULE, "canView");
   const canCreatePurchase = hasModulePermission(authUser, PURCHASES_MODULE, "canCreate");
 
-  const { purchases, filters, setFilters } = usePurchases();
+  const { purchases, filters, setFilters, isLoading } = usePurchases();
 
   if (!canViewPurchases) {
     return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
@@ -43,7 +43,7 @@ export function PurchasesPage() {
         ) : null}
       </div>
 
-      <PurchaseTable purchases={purchases} />
+      <PurchaseTable purchases={purchases} isLoading={isLoading} />
     </div>
   );
 }

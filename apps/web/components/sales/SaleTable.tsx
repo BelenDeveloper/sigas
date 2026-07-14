@@ -15,10 +15,12 @@ import { useRouter } from "next/navigation";
 import type { SaleListItem } from "@/hooks/use-sales";
 import { formatCurrencyBOB } from "@/lib/format-currency";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
 import { SaleStatusBadge } from "./SaleStatusBadge";
 
 const NO_SALES_MESSAGE = "No se encontraron ventas con estos filtros.";
 const DATE_LOCALE = "es-BO";
+const COLUMN_COUNT = 9;
 
 function formatSaleDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(DATE_LOCALE, {
@@ -30,9 +32,10 @@ function formatSaleDate(isoDate: string): string {
 
 interface SaleTableProps {
   sales: SaleListItem[];
+  isLoading: boolean;
 }
 
-export function SaleTable({ sales }: SaleTableProps) {
+export function SaleTable({ sales, isLoading }: SaleTableProps) {
   const router = useRouter();
 
   const goToSaleDetail = (saleId: string) => {
@@ -55,9 +58,11 @@ export function SaleTable({ sales }: SaleTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sales.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : sales.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={9} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_SALES_MESSAGE}
             </TableCell>
           </TableRow>

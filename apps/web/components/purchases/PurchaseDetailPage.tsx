@@ -30,6 +30,7 @@ import { formatCurrencyBOB } from "@/lib/format-currency";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 import { hasModulePermission } from "@/lib/permission-helpers";
 
+import { DetailPageSkeleton } from "../shared/DetailPageSkeleton";
 import { PurchaseStatusBadge } from "./PurchaseStatusBadge";
 
 const PURCHASES_MODULE = "purchases";
@@ -74,7 +75,7 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
   }
 
   if (isLoading) {
-    return null;
+    return <DetailPageSkeleton />;
   }
 
   if (!purchase) {

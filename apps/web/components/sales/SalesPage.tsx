@@ -21,7 +21,7 @@ export function SalesPage() {
   const canViewSales = hasModulePermission(authUser, SALES_MODULE, "canView");
   const canCreateSale = hasModulePermission(authUser, SALES_MODULE, "canCreate");
 
-  const { sales, filters, setFilters } = useSales();
+  const { sales, filters, setFilters, isLoading } = useSales();
 
   if (!canViewSales) {
     return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
@@ -43,7 +43,7 @@ export function SalesPage() {
         ) : null}
       </div>
 
-      <SaleTable sales={sales} />
+      <SaleTable sales={sales} isLoading={isLoading} />
     </div>
   );
 }

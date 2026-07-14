@@ -15,10 +15,12 @@ import { useRouter } from "next/navigation";
 import type { PurchaseListItem } from "@/hooks/use-purchases";
 import { formatCurrencyBOB } from "@/lib/format-currency";
 
+import { TableSkeleton } from "../shared/TableSkeleton";
 import { PurchaseStatusBadge } from "./PurchaseStatusBadge";
 
 const NO_PURCHASES_MESSAGE = "No se encontraron compras con estos filtros.";
 const DATE_LOCALE = "es-BO";
+const COLUMN_COUNT = 9;
 
 function formatPurchaseDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(DATE_LOCALE, {
@@ -30,9 +32,10 @@ function formatPurchaseDate(isoDate: string): string {
 
 interface PurchaseTableProps {
   purchases: PurchaseListItem[];
+  isLoading: boolean;
 }
 
-export function PurchaseTable({ purchases }: PurchaseTableProps) {
+export function PurchaseTable({ purchases, isLoading }: PurchaseTableProps) {
   const router = useRouter();
 
   const goToPurchaseDetail = (purchaseId: string) => {
@@ -55,9 +58,11 @@ export function PurchaseTable({ purchases }: PurchaseTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {purchases.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton columns={COLUMN_COUNT} />
+        ) : purchases.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={9} className="text-center text-muted-foreground">
+            <TableCell colSpan={COLUMN_COUNT} className="text-center text-muted-foreground">
               {NO_PURCHASES_MESSAGE}
             </TableCell>
           </TableRow>
