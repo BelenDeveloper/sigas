@@ -40,6 +40,9 @@ export function InventoryPage() {
     adjustStock,
     isLoading,
     isMovementsLoading,
+    isCreating,
+    isUpdating,
+    isAdjustingStock,
   } = useInventory();
 
   const [productFormOpen, setProductFormOpen] = useState(false);
@@ -118,6 +121,8 @@ export function InventoryPage() {
         product={editingProduct}
         categories={categories}
         subcategories={subcategories}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
         onCreate={createProduct}
         onUpdate={updateProduct}
       />
@@ -126,6 +131,7 @@ export function InventoryPage() {
         product={adjustingProduct}
         open={adjustStockOpen}
         onOpenChange={setAdjustStockOpen}
+        isSaving={isAdjustingStock}
         onConfirm={adjustStock}
       />
     </div>

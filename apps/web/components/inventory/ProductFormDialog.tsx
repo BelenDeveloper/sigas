@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Textarea } from "@repo/ui/components/ui/textarea";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -36,6 +37,7 @@ import {
 const REQUIRED_MESSAGE = "Este campo es obligatorio.";
 const NON_NEGATIVE_MESSAGE = "Debe ser un número positivo.";
 const MAX_STOCK_MESSAGE = "El stock máximo debe ser mayor o igual al mínimo.";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el producto. Intenta nuevamente.";
 
 const productFormSchema = z
   .object({
@@ -98,8 +100,10 @@ interface ProductFormDialogProps {
   product: Product | null;
   categories: ProductCategory[];
   subcategories: ProductSubcategory[];
-  onCreate: (input: ProductInput) => void;
-  onUpdate: (productId: string, input: ProductInput) => void;
+  isCreating: boolean;
+  isUpdating: boolean;
+  onCreate: (input: ProductInput) => Promise<void>;
+  onUpdate: (productId: string, input: ProductInput) => Promise<void>;
 }
 
 export function ProductFormDialog({
@@ -108,10 +112,15 @@ export function ProductFormDialog({
   product,
   categories,
   subcategories,
+  isCreating,
+  isUpdating,
   onCreate,
   onUpdate,
 }: ProductFormDialogProps) {
   const isEditMode = product !== null;
+  const isSaving = isEditMode ? isUpdating : isCreating;
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -131,6 +140,7 @@ export function ProductFormDialog({
   useEffect(() => {
     if (open) {
       reset(product ? toFormValues(product) : EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, product, reset]);
 
@@ -138,14 +148,20 @@ export function ProductFormDialog({
     (subcategory) => subcategory.categoryId === categoryId,
   );
 
-  const onSubmit = (values: ProductFormValues) => {
-    if (isEditMode && product) {
-      onUpdate(product.id, values);
-    } else {
-      onCreate(values);
-    }
+  const onSubmit = async (values: ProductFormValues) => {
+    setErrorMessage(null);
 
-    onOpenChange(false);
+    try {
+      if (isEditMode && product) {
+        await onUpdate(product.id, values);
+      } else {
+        await onCreate(values);
+      }
+
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -313,9 +329,21 @@ export function ProductFormDialog({
             <Textarea id="product-description" rows={3} {...register("description")} />
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              {isEditMode ? "Guardar cambios" : "Crear producto"}
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isEditMode ? (
+                "Guardar cambios"
+              ) : (
+                "Crear producto"
+              )}
             </Button>
           </DialogFooter>
         </form>

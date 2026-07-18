@@ -12,7 +12,8 @@ import {
 } from "@repo/ui/components/ui/dialog";
 import { Input } from "@repo/ui/components/ui/input";
 import { Label } from "@repo/ui/components/ui/label";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
@@ -20,6 +21,7 @@ import type { Product } from "@/lib/inventory-types";
 
 const QUANTITY_ZERO_MESSAGE = "La cantidad no puede ser cero.";
 const REASON_REQUIRED_MESSAGE = "El motivo es obligatorio.";
+const SAVE_ERROR_MESSAGE = "No se pudo ajustar el stock. Intenta nuevamente.";
 
 const adjustStockSchema = z.object({
   quantity: z.coerce.number().refine((value) => value !== 0, QUANTITY_ZERO_MESSAGE),
@@ -35,15 +37,19 @@ interface AdjustStockDialogProps {
   product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (productId: string, quantityDelta: number, reason: string) => void;
+  isSaving: boolean;
+  onConfirm: (productId: string, quantityDelta: number, reason: string) => Promise<void>;
 }
 
 export function AdjustStockDialog({
   product,
   open,
   onOpenChange,
+  isSaving,
   onConfirm,
 }: AdjustStockDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -60,6 +66,7 @@ export function AdjustStockDialog({
   useEffect(() => {
     if (open) {
       reset(DEFAULT_VALUES);
+      setErrorMessage(null);
     }
   }, [open, product, reset]);
 
@@ -69,9 +76,15 @@ export function AdjustStockDialog({
 
   const newStockLevel = product.currentStock + (Number(quantity) || 0);
 
-  const onSubmit = (values: AdjustStockFormValues) => {
-    onConfirm(product.id, values.quantity, values.reason);
-    onOpenChange(false);
+  const onSubmit = async (values: AdjustStockFormValues) => {
+    setErrorMessage(null);
+
+    try {
+      await onConfirm(product.id, values.quantity, values.reason);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -104,9 +117,15 @@ export function AdjustStockDialog({
             <span className="font-medium text-foreground">{newStockLevel}</span>
           </p>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Confirmar ajuste
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? <Loader2 className="size-4 animate-spin" /> : "Confirmar ajuste"}
             </Button>
           </DialogFooter>
         </form>

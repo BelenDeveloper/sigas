@@ -73,11 +73,14 @@ interface UseInventoryResult {
   stockMovements: StockMovement[];
   stockMovementFilters: StockMovementFilterState;
   setStockMovementFilters: (filters: Partial<StockMovementFilterState>) => void;
-  createProduct: (input: ProductInput) => void;
-  updateProduct: (productId: string, input: ProductInput) => void;
-  adjustStock: (productId: string, quantityDelta: number, reason: string) => void;
+  createProduct: (input: ProductInput) => Promise<void>;
+  updateProduct: (productId: string, input: ProductInput) => Promise<void>;
+  adjustStock: (productId: string, quantityDelta: number, reason: string) => Promise<void>;
   isLoading: boolean;
   isMovementsLoading: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
+  isAdjustingStock: boolean;
 }
 
 function toProductInput(input: ProductInput) {
@@ -220,22 +223,22 @@ export function useInventory(): UseInventoryResult {
       );
   }, [rawMovements, users, allProducts, stockMovementFilters.searchTerm]);
 
-  const createProduct = (input: ProductInput) => {
-    createMutation.mutate(toProductInput(input));
+  const createProduct = async (input: ProductInput) => {
+    await createMutation.mutateAsync(toProductInput(input));
   };
 
-  const updateProduct = (productId: string, input: ProductInput) => {
+  const updateProduct = async (productId: string, input: ProductInput) => {
     const currentProduct = allProducts.find((product) => product.id === productId);
 
-    updateMutation.mutate({
+    await updateMutation.mutateAsync({
       id: productId,
       ...toProductInput(input),
       isActive: currentProduct?.isActive ?? true,
     });
   };
 
-  const adjustStock = (productId: string, quantityDelta: number, reason: string) => {
-    adjustStockMutation.mutate({ productId, quantity: quantityDelta, reason });
+  const adjustStock = async (productId: string, quantityDelta: number, reason: string) => {
+    await adjustStockMutation.mutateAsync({ productId, quantity: quantityDelta, reason });
   };
 
   return {
@@ -252,5 +255,8 @@ export function useInventory(): UseInventoryResult {
     adjustStock,
     isLoading: rawAllProducts === undefined,
     isMovementsLoading: rawMovements === undefined,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isAdjustingStock: adjustStockMutation.isPending,
   };
 }
