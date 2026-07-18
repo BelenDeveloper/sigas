@@ -1,4 +1,5 @@
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 
 import type { ProjectTask } from "@/hooks/use-projects";
 import { getStageByKey } from "@/lib/constants/project-stages";
@@ -10,10 +11,16 @@ const UNKNOWN_ASSIGNEE_LABEL = "—";
 interface LogisticsTaskListProps {
   tasks: ProjectTask[];
   users: AdminUser[];
+  completingTaskId: string | null;
   onToggleTaskCompleted: (taskId: string) => void;
 }
 
-export function LogisticsTaskList({ tasks, users, onToggleTaskCompleted }: LogisticsTaskListProps) {
+export function LogisticsTaskList({
+  tasks,
+  users,
+  completingTaskId,
+  onToggleTaskCompleted,
+}: LogisticsTaskListProps) {
   if (tasks.length === 0) {
     return <p className="text-sm text-muted-foreground">{NO_TASKS_MESSAGE}</p>;
   }
@@ -41,7 +48,7 @@ export function LogisticsTaskList({ tasks, users, onToggleTaskCompleted }: Logis
                 >
                   <Checkbox
                     checked={task.isCompleted}
-                    disabled={task.isCompleted}
+                    disabled={task.isCompleted || completingTaskId === task.id}
                     onCheckedChange={() => onToggleTaskCompleted(task.id)}
                   />
                   <div className="flex flex-1 flex-col">
@@ -58,6 +65,9 @@ export function LogisticsTaskList({ tasks, users, onToggleTaskCompleted }: Logis
                       Asignado a: {getUserName(task.assignedTo)}
                     </span>
                   </div>
+                  {completingTaskId === task.id ? (
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  ) : null}
                 </div>
               ))}
           </div>

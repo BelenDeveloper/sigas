@@ -21,7 +21,8 @@ interface DocumentsTabProps {
   users: AdminUser[];
   canEdit: boolean;
   getUploadUrl: GetProjectUploadUrl;
-  onAddDocument: (input: DocumentInput) => void;
+  togglingChecklistItemId: string | null;
+  onAddDocument: (input: DocumentInput) => Promise<void>;
   onToggleApprovalStep: (checklistItemId: string, nextIsCompleted: boolean) => void;
 }
 
@@ -30,6 +31,7 @@ export function DocumentsTab({
   users,
   canEdit,
   getUploadUrl,
+  togglingChecklistItemId,
   onAddDocument,
   onToggleApprovalStep,
 }: DocumentsTabProps) {
@@ -53,7 +55,11 @@ export function DocumentsTab({
           <CardTitle>{getStageByKey(DESIGN_INSPECTION_STAGE_KEY).label}</CardTitle>
         </CardHeader>
         <CardContent>
-          <ApprovalChecklist steps={project.approvalChecklist} onToggleStep={onToggleApprovalStep} />
+          <ApprovalChecklist
+            steps={project.approvalChecklist}
+            togglingChecklistItemId={togglingChecklistItemId}
+            onToggleStep={onToggleApprovalStep}
+          />
         </CardContent>
       </Card>
 

@@ -25,7 +25,7 @@ export function ProjectsPage() {
   const canViewProjects = hasModulePermission(authUser, PROJECTS_MODULE, "canView");
   const canCreateProject = hasModulePermission(authUser, PROJECTS_MODULE, "canCreate");
 
-  const { projects, filters, setFilters, createProject, isLoading } = useProjects();
+  const { projects, filters, setFilters, createProject, isLoading, isCreating } = useProjects();
   const { companies } = useCompanies();
   const { clients } = useClients();
 
@@ -71,6 +71,7 @@ export function ProjectsPage() {
         onOpenChange={setIsFormOpen}
         companies={companies}
         clients={clients}
+        isCreating={isCreating}
         onCreate={createProject}
       />
     </div>

@@ -47,7 +47,7 @@ interface UploadDocumentDialogProps {
   onOpenChange: (open: boolean) => void;
   currentStage: ProjectStageKey;
   getUploadUrl: GetProjectUploadUrl;
-  onCreate: (input: DocumentInput) => void;
+  onCreate: (input: DocumentInput) => Promise<void>;
 }
 
 export function UploadDocumentDialog({
@@ -106,7 +106,7 @@ export function UploadDocumentDialog({
 
     try {
       const path = await uploadProjectFile(selectedFile, getUploadUrl);
-      onCreate({ stage: values.stage, name: values.fileName, fileUrl: path, fileType: selectedFile.type });
+      await onCreate({ stage: values.stage, name: values.fileName, fileUrl: path, fileType: selectedFile.type });
       onOpenChange(false);
     } catch {
       setUploadError(UPLOAD_ERROR_MESSAGE);

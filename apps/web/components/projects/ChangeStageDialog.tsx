@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Textarea } from "@repo/ui/components/ui/textarea";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -28,6 +29,7 @@ import { CANCELLED_STAGE_KEY, getNextStage, type ProjectStageKey } from "@/lib/c
 
 const NOTE_REQUIRED_FOR_CANCEL_MESSAGE = "Ingresa un motivo para cancelar el proyecto.";
 const CANCEL_OPTION_LABEL = "Cancelar proyecto";
+const SAVE_ERROR_MESSAGE = "No se pudo cambiar la etapa. Intenta nuevamente.";
 
 type StageDecision = "advance" | "cancel";
 const DEFAULT_DECISION: StageDecision = "advance";
@@ -55,11 +57,20 @@ interface ChangeStageDialogProps {
   project: ProjectDetail;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (nextStage: ProjectStageKey, note: string) => void;
+  isChangingStage: boolean;
+  onConfirm: (nextStage: ProjectStageKey, note: string) => Promise<void>;
 }
 
-export function ChangeStageDialog({ project, open, onOpenChange, onConfirm }: ChangeStageDialogProps) {
+export function ChangeStageDialog({
+  project,
+  open,
+  onOpenChange,
+  isChangingStage,
+  onConfirm,
+}: ChangeStageDialogProps) {
   const nextStage = getNextStage(project.stage);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     handleSubmit,
@@ -76,17 +87,24 @@ export function ChangeStageDialog({ project, open, onOpenChange, onConfirm }: Ch
   useEffect(() => {
     if (open) {
       reset(EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, reset]);
 
   const decision = watch("decision");
 
-  const onSubmit = (values: ChangeStageFormValues) => {
+  const onSubmit = async (values: ChangeStageFormValues) => {
     const resolvedStage: ProjectStageKey =
       values.decision === "cancel" ? CANCELLED_STAGE_KEY : (nextStage?.key ?? CANCELLED_STAGE_KEY);
 
-    onConfirm(resolvedStage, values.note);
-    onOpenChange(false);
+    setErrorMessage(null);
+
+    try {
+      await onConfirm(resolvedStage, values.note);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -125,9 +143,15 @@ export function ChangeStageDialog({ project, open, onOpenChange, onConfirm }: Ch
             {errors.note ? <p className="text-sm text-destructive">{errors.note.message}</p> : null}
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Confirmar cambio
+            <Button
+              type="submit"
+              disabled={isChangingStage}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isChangingStage ? <Loader2 className="size-4 animate-spin" /> : "Confirmar cambio"}
             </Button>
           </DialogFooter>
         </form>

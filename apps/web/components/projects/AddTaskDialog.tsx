@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -29,6 +30,7 @@ import type { AdminUser } from "@/lib/user-permissions";
 const DESCRIPTION_REQUIRED_MESSAGE = "La descripción es obligatoria.";
 const ASSIGNEE_REQUIRED_MESSAGE = "Selecciona a quién se asigna la tarea.";
 const SELECT_ASSIGNEE_PLACEHOLDER = "Selecciona una persona";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar la tarea. Intenta nuevamente.";
 
 const PROJECT_STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key) as [
   ProjectStageKey,
@@ -48,11 +50,21 @@ interface AddTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   currentStage: ProjectStageKey;
   users: AdminUser[];
-  onCreate: (input: TaskInput) => void;
+  isAddingTask: boolean;
+  onCreate: (input: TaskInput) => Promise<void>;
 }
 
-export function AddTaskDialog({ open, onOpenChange, currentStage, users, onCreate }: AddTaskDialogProps) {
+export function AddTaskDialog({
+  open,
+  onOpenChange,
+  currentStage,
+  users,
+  isAddingTask,
+  onCreate,
+}: AddTaskDialogProps) {
   const emptyValues: TaskFormValues = { stage: currentStage, description: "", assignedTo: "" };
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -69,6 +81,7 @@ export function AddTaskDialog({ open, onOpenChange, currentStage, users, onCreat
   useEffect(() => {
     if (open) {
       reset(emptyValues);
+      setErrorMessage(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, currentStage, reset]);
@@ -77,9 +90,15 @@ export function AddTaskDialog({ open, onOpenChange, currentStage, users, onCreat
   const assignedTo = watch("assignedTo");
   const selectedAssignee = users.find((user) => user.id === assignedTo);
 
-  const onSubmit = (values: TaskFormValues) => {
-    onCreate(values);
-    onOpenChange(false);
+  const onSubmit = async (values: TaskFormValues) => {
+    setErrorMessage(null);
+
+    try {
+      await onCreate(values);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -141,9 +160,15 @@ export function AddTaskDialog({ open, onOpenChange, currentStage, users, onCreat
             ) : null}
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Crear tarea
+            <Button
+              type="submit"
+              disabled={isAddingTask}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isAddingTask ? <Loader2 className="size-4 animate-spin" /> : "Crear tarea"}
             </Button>
           </DialogFooter>
         </form>

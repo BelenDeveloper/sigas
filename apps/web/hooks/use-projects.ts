@@ -181,6 +181,7 @@ interface UseProjectsResult {
   setFilters: (filters: Partial<ProjectFilterState>) => void;
   createProject: (input: ProjectInput) => Promise<{ id: string }>;
   isLoading: boolean;
+  isCreating: boolean;
 }
 
 export function useProjects(): UseProjectsResult {
@@ -225,20 +226,27 @@ export function useProjects(): UseProjectsResult {
     setFilters,
     createProject,
     isLoading: rawProjects === undefined,
+    isCreating: createMutation.isPending,
   };
 }
 
 interface UseProjectResult {
   project: ProjectDetail | undefined;
   isLoading: boolean;
-  changeStage: (newStage: ProjectStageKey, notes: string) => void;
-  addTask: (input: TaskInput) => void;
-  toggleTaskCompleted: (taskId: string) => void;
-  addExpense: (input: ExpenseInput) => void;
-  addDocument: (input: DocumentInput) => void;
-  recordPayment: (installment: PaymentInstallment, input: PaymentInput) => void;
-  toggleApprovalStep: (checklistItemId: string, nextIsCompleted: boolean) => void;
+  changeStage: (newStage: ProjectStageKey, notes: string) => Promise<void>;
+  addTask: (input: TaskInput) => Promise<void>;
+  toggleTaskCompleted: (taskId: string) => Promise<void>;
+  addExpense: (input: ExpenseInput) => Promise<void>;
+  addDocument: (input: DocumentInput) => Promise<void>;
+  recordPayment: (installment: PaymentInstallment, input: PaymentInput) => Promise<void>;
+  toggleApprovalStep: (checklistItemId: string, nextIsCompleted: boolean) => Promise<void>;
   getUploadUrl: GetProjectUploadUrl;
+  isChangingStage: boolean;
+  isAddingTask: boolean;
+  completingTaskId: string | null;
+  isAddingExpense: boolean;
+  isRecordingPayment: boolean;
+  togglingChecklistItemId: string | null;
 }
 
 export function useProject(projectId: string): UseProjectResult {
@@ -335,12 +343,12 @@ export function useProject(projectId: string): UseProjectResult {
     };
   }, [rawProject]);
 
-  const changeStage = (newStage: ProjectStageKey, notes: string) => {
-    changeStageMutation.mutate({ projectId, newStage, notes: notes || undefined });
+  const changeStage = async (newStage: ProjectStageKey, notes: string) => {
+    await changeStageMutation.mutateAsync({ projectId, newStage, notes: notes || undefined });
   };
 
-  const addTask = (input: TaskInput) => {
-    addTaskMutation.mutate({
+  const addTask = async (input: TaskInput) => {
+    await addTaskMutation.mutateAsync({
       projectId,
       stage: input.stage,
       description: input.description,
@@ -348,12 +356,12 @@ export function useProject(projectId: string): UseProjectResult {
     });
   };
 
-  const toggleTaskCompleted = (taskId: string) => {
-    completeTaskMutation.mutate({ id: taskId });
+  const toggleTaskCompleted = async (taskId: string) => {
+    await completeTaskMutation.mutateAsync({ id: taskId });
   };
 
-  const addExpense = (input: ExpenseInput) => {
-    addExpenseMutation.mutate({
+  const addExpense = async (input: ExpenseInput) => {
+    await addExpenseMutation.mutateAsync({
       projectId,
       stage: input.stage,
       description: input.description,
@@ -363,8 +371,8 @@ export function useProject(projectId: string): UseProjectResult {
     });
   };
 
-  const addDocument = (input: DocumentInput) => {
-    uploadDocumentMutation.mutate({
+  const addDocument = async (input: DocumentInput) => {
+    await uploadDocumentMutation.mutateAsync({
       projectId,
       stage: input.stage,
       name: input.name,
@@ -373,8 +381,8 @@ export function useProject(projectId: string): UseProjectResult {
     });
   };
 
-  const recordPayment = (installment: PaymentInstallment, input: PaymentInput) => {
-    recordPaymentMutation.mutate({
+  const recordPayment = async (installment: PaymentInstallment, input: PaymentInput) => {
+    await recordPaymentMutation.mutateAsync({
       projectId,
       paymentNumber: installment === "first" ? 1 : 2,
       amount: input.amountBOB,
@@ -383,8 +391,8 @@ export function useProject(projectId: string): UseProjectResult {
     });
   };
 
-  const toggleApprovalStep = (checklistItemId: string, nextIsCompleted: boolean) => {
-    updateChecklistMutation.mutate({ id: checklistItemId, isCompleted: nextIsCompleted });
+  const toggleApprovalStep = async (checklistItemId: string, nextIsCompleted: boolean) => {
+    await updateChecklistMutation.mutateAsync({ id: checklistItemId, isCompleted: nextIsCompleted });
   };
 
   const getUploadUrl: GetProjectUploadUrl = (fileName, contentType) => {
@@ -402,5 +410,15 @@ export function useProject(projectId: string): UseProjectResult {
     recordPayment,
     toggleApprovalStep,
     getUploadUrl,
+    isChangingStage: changeStageMutation.isPending,
+    isAddingTask: addTaskMutation.isPending,
+    completingTaskId: completeTaskMutation.isPending
+      ? (completeTaskMutation.variables?.id ?? null)
+      : null,
+    isAddingExpense: addExpenseMutation.isPending,
+    isRecordingPayment: recordPaymentMutation.isPending,
+    togglingChecklistItemId: updateChecklistMutation.isPending
+      ? (updateChecklistMutation.variables?.id ?? null)
+      : null,
   };
 }

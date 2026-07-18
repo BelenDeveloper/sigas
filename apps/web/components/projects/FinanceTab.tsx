@@ -40,11 +40,20 @@ function formatDate(isoDate: string): string {
 interface FinanceTabProps {
   project: ProjectDetail;
   getUploadUrl: GetProjectUploadUrl;
-  onRecordPayment: (installment: PaymentInstallment, input: PaymentInput) => void;
-  onAddExpense: (input: ExpenseInput) => void;
+  isAddingExpense: boolean;
+  isRecordingPayment: boolean;
+  onRecordPayment: (installment: PaymentInstallment, input: PaymentInput) => Promise<void>;
+  onAddExpense: (input: ExpenseInput) => Promise<void>;
 }
 
-export function FinanceTab({ project, getUploadUrl, onRecordPayment, onAddExpense }: FinanceTabProps) {
+export function FinanceTab({
+  project,
+  getUploadUrl,
+  isAddingExpense,
+  isRecordingPayment,
+  onRecordPayment,
+  onAddExpense,
+}: FinanceTabProps) {
   const [paymentInstallment, setPaymentInstallment] = useState<PaymentInstallment | null>(null);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
 
@@ -152,6 +161,7 @@ export function FinanceTab({ project, getUploadUrl, onRecordPayment, onAddExpens
         installment={paymentInstallment}
         open={paymentInstallment !== null}
         onOpenChange={handleClosePaymentDialog}
+        isRecordingPayment={isRecordingPayment}
         onConfirm={onRecordPayment}
       />
 
@@ -160,6 +170,7 @@ export function FinanceTab({ project, getUploadUrl, onRecordPayment, onAddExpens
         onOpenChange={setIsExpenseDialogOpen}
         currentStage={project.stage}
         getUploadUrl={getUploadUrl}
+        isAddingExpense={isAddingExpense}
         onCreate={onAddExpense}
       />
     </div>

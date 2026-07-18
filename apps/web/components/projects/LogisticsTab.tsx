@@ -14,11 +14,21 @@ interface LogisticsTabProps {
   project: ProjectDetail;
   users: AdminUser[];
   canEdit: boolean;
-  onAddTask: (input: TaskInput) => void;
+  isAddingTask: boolean;
+  completingTaskId: string | null;
+  onAddTask: (input: TaskInput) => Promise<void>;
   onToggleTaskCompleted: (taskId: string) => void;
 }
 
-export function LogisticsTab({ project, users, canEdit, onAddTask, onToggleTaskCompleted }: LogisticsTabProps) {
+export function LogisticsTab({
+  project,
+  users,
+  canEdit,
+  isAddingTask,
+  completingTaskId,
+  onAddTask,
+  onToggleTaskCompleted,
+}: LogisticsTabProps) {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
   return (
@@ -32,13 +42,19 @@ export function LogisticsTab({ project, users, canEdit, onAddTask, onToggleTaskC
         </div>
       ) : null}
 
-      <LogisticsTaskList tasks={project.tasks} users={users} onToggleTaskCompleted={onToggleTaskCompleted} />
+      <LogisticsTaskList
+        tasks={project.tasks}
+        users={users}
+        completingTaskId={completingTaskId}
+        onToggleTaskCompleted={onToggleTaskCompleted}
+      />
 
       <AddTaskDialog
         open={isAddTaskOpen}
         onOpenChange={setIsAddTaskOpen}
         currentStage={project.stage}
         users={users}
+        isAddingTask={isAddingTask}
         onCreate={onAddTask}
       />
     </div>

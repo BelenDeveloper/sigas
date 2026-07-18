@@ -20,7 +20,8 @@ import {
 } from "@repo/ui/components/ui/select";
 import { Switch } from "@repo/ui/components/ui/switch";
 import { Textarea } from "@repo/ui/components/ui/textarea";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -36,6 +37,7 @@ const START_DATE_REQUIRED_MESSAGE = "La fecha de inicio es obligatoria.";
 const TOTAL_VALUE_POSITIVE_MESSAGE = "El valor total debe ser mayor a cero.";
 const SELECT_COMPANY_PLACEHOLDER = "Selecciona una empresa";
 const SELECT_CLIENT_PLACEHOLDER = "Selecciona un cliente";
+const SAVE_ERROR_MESSAGE = "No se pudo crear el proyecto. Intenta nuevamente.";
 
 const DEFAULT_CATEGORY: ProjectCategory = "domestic";
 
@@ -73,7 +75,8 @@ interface ProjectFormDialogProps {
   onOpenChange: (open: boolean) => void;
   companies: Company[];
   clients: Client[];
-  onCreate: (input: ProjectInput) => void;
+  isCreating: boolean;
+  onCreate: (input: ProjectInput) => Promise<{ id: string }>;
 }
 
 export function ProjectFormDialog({
@@ -81,8 +84,11 @@ export function ProjectFormDialog({
   onOpenChange,
   companies,
   clients,
+  isCreating,
   onCreate,
 }: ProjectFormDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -98,6 +104,7 @@ export function ProjectFormDialog({
   useEffect(() => {
     if (open) {
       reset(EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, reset]);
 
@@ -108,9 +115,15 @@ export function ProjectFormDialog({
   const selectedCompany = companies.find((company) => company.id === companyId);
   const selectedClient = clients.find((client) => client.id === clientId);
 
-  const onSubmit = (values: ProjectFormValues) => {
-    onCreate(values);
-    onOpenChange(false);
+  const onSubmit = async (values: ProjectFormValues) => {
+    setErrorMessage(null);
+
+    try {
+      await onCreate(values);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -241,9 +254,15 @@ export function ProjectFormDialog({
             <Textarea id="project-form-description" rows={3} {...register("description")} />
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Crear proyecto
+            <Button
+              type="submit"
+              disabled={isCreating}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isCreating ? <Loader2 className="size-4 animate-spin" /> : "Crear proyecto"}
             </Button>
           </DialogFooter>
         </form>

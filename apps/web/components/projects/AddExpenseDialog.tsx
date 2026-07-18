@@ -29,7 +29,7 @@ import { uploadProjectFile, type GetProjectUploadUrl } from "@/lib/project-file-
 
 const DESCRIPTION_REQUIRED_MESSAGE = "La descripción es obligatoria.";
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
-const UPLOAD_ERROR_MESSAGE = "No se pudo subir el comprobante. Intenta nuevamente.";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el gasto. Intenta nuevamente.";
 
 const PROJECT_STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key) as [
   ProjectStageKey,
@@ -54,7 +54,8 @@ interface AddExpenseDialogProps {
   onOpenChange: (open: boolean) => void;
   currentStage: ProjectStageKey;
   getUploadUrl: GetProjectUploadUrl;
-  onCreate: (input: ExpenseInput) => void;
+  isAddingExpense: boolean;
+  onCreate: (input: ExpenseInput) => Promise<void>;
 }
 
 export function AddExpenseDialog({
@@ -62,6 +63,7 @@ export function AddExpenseDialog({
   onOpenChange,
   currentStage,
   getUploadUrl,
+  isAddingExpense,
   onCreate,
 }: AddExpenseDialogProps) {
   const emptyValues: ExpenseFormInput = {
@@ -99,6 +101,8 @@ export function AddExpenseDialog({
   const stage = watch("stage");
   const method = watch("method");
 
+  const isSaving = isUploading || isAddingExpense;
+
   const handleReceiptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedReceipt(event.target.files?.[0] ?? null);
   };
@@ -112,10 +116,10 @@ export function AddExpenseDialog({
         ? await uploadProjectFile(selectedReceipt, getUploadUrl)
         : undefined;
 
-      onCreate({ ...values, receiptUrl });
+      await onCreate({ ...values, receiptUrl });
       onOpenChange(false);
     } catch {
-      setUploadError(UPLOAD_ERROR_MESSAGE);
+      setUploadError(SAVE_ERROR_MESSAGE);
     } finally {
       setIsUploading(false);
     }
@@ -195,8 +199,8 @@ export function AddExpenseDialog({
           {uploadError ? <p className="text-sm text-destructive">{uploadError}</p> : null}
 
           <DialogFooter>
-            <Button type="submit" disabled={isUploading} className="bg-brand text-brand-foreground hover:bg-brand/90">
-              {isUploading ? "Subiendo..." : "Agregar gasto"}
+            <Button type="submit" disabled={isSaving} className="bg-brand text-brand-foreground hover:bg-brand/90">
+              {isSaving ? "Subiendo..." : "Agregar gasto"}
             </Button>
           </DialogFooter>
         </form>

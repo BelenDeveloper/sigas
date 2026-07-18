@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -28,6 +29,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method"
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
 const DATE_REQUIRED_MESSAGE = "La fecha es obligatoria.";
 const DESTINATION_REQUIRED_MESSAGE = "Indica a dónde fue el dinero (cuenta destino).";
+const SAVE_ERROR_MESSAGE = "No se pudo registrar el pago. Intenta nuevamente.";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_METHOD: PaymentMethod = "bank_transfer";
@@ -54,15 +56,19 @@ interface RecordPaymentDialogProps {
   installment: PaymentInstallment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (installment: PaymentInstallment, payment: PaymentInput) => void;
+  isRecordingPayment: boolean;
+  onConfirm: (installment: PaymentInstallment, payment: PaymentInput) => Promise<void>;
 }
 
 export function RecordPaymentDialog({
   installment,
   open,
   onOpenChange,
+  isRecordingPayment,
   onConfirm,
 }: RecordPaymentDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -78,6 +84,7 @@ export function RecordPaymentDialog({
   useEffect(() => {
     if (open) {
       reset(buildEmptyValues());
+      setErrorMessage(null);
     }
   }, [open, installment, reset]);
 
@@ -89,9 +96,15 @@ export function RecordPaymentDialog({
 
   const installmentLabel = installment === "first" ? "Cuota 1" : "Cuota 2";
 
-  const onSubmit = (values: PaymentFormValues) => {
-    onConfirm(installment, values);
-    onOpenChange(false);
+  const onSubmit = async (values: PaymentFormValues) => {
+    setErrorMessage(null);
+
+    try {
+      await onConfirm(installment, values);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -144,9 +157,15 @@ export function RecordPaymentDialog({
             {errors.date ? <p className="text-sm text-destructive">{errors.date.message}</p> : null}
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Confirmar pago
+            <Button
+              type="submit"
+              disabled={isRecordingPayment}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isRecordingPayment ? <Loader2 className="size-4 animate-spin" /> : "Confirmar pago"}
             </Button>
           </DialogFooter>
         </form>

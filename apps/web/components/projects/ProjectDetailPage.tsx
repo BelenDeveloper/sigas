@@ -48,6 +48,12 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     recordPayment,
     toggleApprovalStep,
     getUploadUrl,
+    isChangingStage,
+    isAddingTask,
+    completingTaskId,
+    isAddingExpense,
+    isRecordingPayment,
+    togglingChecklistItemId,
   } = useProject(projectId);
   const { users } = useUsers();
 
@@ -124,8 +130,12 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
             project={project}
             users={users}
             canEdit={canEditProject}
+            isAddingTask={isAddingTask}
+            completingTaskId={completingTaskId}
             onAddTask={addTask}
-            onToggleTaskCompleted={toggleTaskCompleted}
+            onToggleTaskCompleted={(taskId) => {
+              toggleTaskCompleted(taskId).catch(() => undefined);
+            }}
           />
         </TabsContent>
 
@@ -134,6 +144,8 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
             <FinanceTab
               project={project}
               getUploadUrl={getUploadUrl}
+              isAddingExpense={isAddingExpense}
+              isRecordingPayment={isRecordingPayment}
               onRecordPayment={recordPayment}
               onAddExpense={addExpense}
             />
@@ -146,8 +158,11 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
             users={users}
             canEdit={canEditProject}
             getUploadUrl={getUploadUrl}
+            togglingChecklistItemId={togglingChecklistItemId}
             onAddDocument={addDocument}
-            onToggleApprovalStep={toggleApprovalStep}
+            onToggleApprovalStep={(checklistItemId, nextIsCompleted) => {
+              toggleApprovalStep(checklistItemId, nextIsCompleted).catch(() => undefined);
+            }}
           />
         </TabsContent>
       </Tabs>
@@ -156,6 +171,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         project={project}
         open={isChangeStageOpen}
         onOpenChange={setIsChangeStageOpen}
+        isChangingStage={isChangingStage}
         onConfirm={changeStage}
       />
     </div>
