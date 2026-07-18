@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -33,6 +34,7 @@ import {
 
 const NAME_REQUIRED_MESSAGE = "El nombre es obligatorio.";
 const INVALID_EMAIL_MESSAGE = "Ingresa un correo electrónico válido.";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el cliente. Intenta nuevamente.";
 
 const clientFormSchema = z.object({
   name: z.string().min(1, NAME_REQUIRED_MESSAGE),
@@ -75,18 +77,25 @@ interface ClientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client: Client | null;
-  onCreate: (input: ClientInput) => void;
-  onUpdate: (clientId: string, input: ClientInput) => void;
+  isCreating: boolean;
+  isUpdating: boolean;
+  onCreate: (input: ClientInput) => Promise<void>;
+  onUpdate: (clientId: string, input: ClientInput) => Promise<void>;
 }
 
 export function ClientFormDialog({
   open,
   onOpenChange,
   client,
+  isCreating,
+  isUpdating,
   onCreate,
   onUpdate,
 }: ClientFormDialogProps) {
   const isEditMode = client !== null;
+  const isSaving = isEditMode ? isUpdating : isCreating;
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -103,17 +112,24 @@ export function ClientFormDialog({
   useEffect(() => {
     if (open) {
       reset(client ? toFormValues(client) : EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, client, reset]);
 
-  const onSubmit = (values: ClientFormValues) => {
-    if (isEditMode && client) {
-      onUpdate(client.id, values);
-    } else {
-      onCreate(values);
-    }
+  const onSubmit = async (values: ClientFormValues) => {
+    setErrorMessage(null);
 
-    onOpenChange(false);
+    try {
+      if (isEditMode && client) {
+        await onUpdate(client.id, values);
+      } else {
+        await onCreate(values);
+      }
+
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -189,9 +205,21 @@ export function ClientFormDialog({
             <Input id="client-form-address" {...register("address")} />
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              {isEditMode ? "Guardar cambios" : "Crear cliente"}
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isEditMode ? (
+                "Guardar cambios"
+              ) : (
+                "Crear cliente"
+              )}
             </Button>
           </DialogFooter>
         </form>

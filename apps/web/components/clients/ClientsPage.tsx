@@ -35,6 +35,9 @@ export function ClientsPage() {
     updateClient,
     toggleClientActive,
     isLoading,
+    isCreating,
+    isUpdating,
+    togglingClientId,
   } = useClients();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -81,14 +84,19 @@ export function ClientsPage() {
         isLoading={isLoading}
         canEdit={canEditClient}
         canToggleActive={canToggleActive}
+        togglingClientId={togglingClientId}
         onEdit={handleEditClient}
-        onToggleActive={(client) => toggleClientActive(client.id)}
+        onToggleActive={(client) => {
+          toggleClientActive(client.id).catch(() => undefined);
+        }}
       />
 
       <ClientFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         client={editingClient}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
         onCreate={createClient}
         onUpdate={updateClient}
       />

@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
-import { Eye, Pencil, Power } from "lucide-react";
+import { Eye, Loader2, Pencil, Power } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { CLIENT_DOCUMENT_TYPE_LABELS, type Client } from "@/lib/client-types";
@@ -28,6 +28,7 @@ interface ClientTableProps {
   isLoading: boolean;
   canEdit: boolean;
   canToggleActive: boolean;
+  togglingClientId: string | null;
   onEdit: (client: Client) => void;
   onToggleActive: (client: Client) => void;
 }
@@ -37,6 +38,7 @@ export function ClientTable({
   isLoading,
   canEdit,
   canToggleActive,
+  togglingClientId,
   onEdit,
   onToggleActive,
 }: ClientTableProps) {
@@ -121,12 +123,17 @@ export function ClientTable({
                       variant="ghost"
                       size="icon-sm"
                       aria-label={client.isActive ? "Desactivar cliente" : "Activar cliente"}
+                      disabled={togglingClientId === client.id}
                       onClick={(event) => {
                         event.stopPropagation();
                         onToggleActive(client);
                       }}
                     >
-                      <Power className="size-4" />
+                      {togglingClientId === client.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Power className="size-4" />
+                      )}
                     </Button>
                   ) : null}
                 </div>

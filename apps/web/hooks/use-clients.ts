@@ -34,11 +34,14 @@ interface UseClientsResult {
   cities: string[];
   filters: ClientFilterState;
   setFilters: (filters: Partial<ClientFilterState>) => void;
-  createClient: (input: ClientInput) => void;
-  updateClient: (clientId: string, input: ClientInput) => void;
-  toggleClientActive: (clientId: string) => void;
+  createClient: (input: ClientInput) => Promise<void>;
+  updateClient: (clientId: string, input: ClientInput) => Promise<void>;
+  toggleClientActive: (clientId: string) => Promise<void>;
   getClientById: (clientId: string) => Client | undefined;
   isLoading: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
+  togglingClientId: string | null;
 }
 
 function toClientInput(input: ClientInput) {
@@ -111,22 +114,22 @@ export function useClients(): UseClientsResult {
   const getClientById = (clientId: string) =>
     allClients.find((client) => client.id === clientId);
 
-  const createClient = (input: ClientInput) => {
-    createMutation.mutate(toClientInput(input));
+  const createClient = async (input: ClientInput) => {
+    await createMutation.mutateAsync(toClientInput(input));
   };
 
-  const updateClient = (clientId: string, input: ClientInput) => {
+  const updateClient = async (clientId: string, input: ClientInput) => {
     const currentClient = getClientById(clientId);
 
-    updateMutation.mutate({
+    await updateMutation.mutateAsync({
       id: clientId,
       ...toClientInput(input),
       isActive: currentClient?.isActive ?? true,
     });
   };
 
-  const toggleClientActive = (clientId: string) => {
-    toggleActiveMutation.mutate({ id: clientId });
+  const toggleClientActive = async (clientId: string) => {
+    await toggleActiveMutation.mutateAsync({ id: clientId });
   };
 
   return {
@@ -139,5 +142,10 @@ export function useClients(): UseClientsResult {
     toggleClientActive,
     getClientById,
     isLoading: rawAllClients === undefined,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    togglingClientId: toggleActiveMutation.isPending
+      ? (toggleActiveMutation.variables?.id ?? null)
+      : null,
   };
 }
