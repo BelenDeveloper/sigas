@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -29,6 +30,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method"
 const DESTINATION_REQUIRED_MESSAGE = "Ingresa el destino del pago.";
 const DATE_REQUIRED_MESSAGE = "La fecha es obligatoria.";
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
+const SAVE_ERROR_MESSAGE = "No se pudo registrar el pago. Intenta nuevamente.";
 
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_METHOD: PaymentMethod = "cash";
@@ -60,10 +62,19 @@ interface AddPaymentDialogProps {
   payable: PayableView | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (payableId: string, payment: PayablePaymentInput) => void;
+  isSaving: boolean;
+  onConfirm: (payableId: string, payment: PayablePaymentInput) => Promise<void>;
 }
 
-export function AddPaymentDialog({ payable, open, onOpenChange, onConfirm }: AddPaymentDialogProps) {
+export function AddPaymentDialog({
+  payable,
+  open,
+  onOpenChange,
+  isSaving,
+  onConfirm,
+}: AddPaymentDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -79,6 +90,7 @@ export function AddPaymentDialog({ payable, open, onOpenChange, onConfirm }: Add
   useEffect(() => {
     if (open) {
       reset(buildEmptyValues());
+      setErrorMessage(null);
     }
   }, [open, payable, reset]);
 
@@ -88,9 +100,15 @@ export function AddPaymentDialog({ payable, open, onOpenChange, onConfirm }: Add
     return null;
   }
 
-  const onSubmit = (values: PaymentFormValues) => {
-    onConfirm(payable.id, values);
-    onOpenChange(false);
+  const onSubmit = async (values: PaymentFormValues) => {
+    setErrorMessage(null);
+
+    try {
+      await onConfirm(payable.id, values);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -144,9 +162,15 @@ export function AddPaymentDialog({ payable, open, onOpenChange, onConfirm }: Add
             {errors.date ? <p className="text-sm text-destructive">{errors.date.message}</p> : null}
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Confirmar pago
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? <Loader2 className="size-4 animate-spin" /> : "Confirmar pago"}
             </Button>
           </DialogFooter>
         </form>

@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Textarea } from "@repo/ui/components/ui/textarea";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -33,6 +34,7 @@ const DUE_DATE_REQUIRED_MESSAGE = "La fecha de vencimiento es obligatoria.";
 const CATEGORY_REQUIRED_MESSAGE = "La categoría es obligatoria.";
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
 const SELECT_SUPPLIER_PLACEHOLDER = "Selecciona un proveedor";
+const SAVE_ERROR_MESSAGE = "No se pudo crear la cuenta por pagar. Intenta nuevamente.";
 
 const DEFAULT_CREDITOR_TYPE: CreditorType = "supplier";
 
@@ -83,10 +85,19 @@ interface AddPayableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suppliers: Supplier[];
-  onCreate: (input: PayableInput) => void;
+  isCreating: boolean;
+  onCreate: (input: PayableInput) => Promise<void>;
 }
 
-export function AddPayableDialog({ open, onOpenChange, suppliers, onCreate }: AddPayableDialogProps) {
+export function AddPayableDialog({
+  open,
+  onOpenChange,
+  suppliers,
+  isCreating,
+  onCreate,
+}: AddPayableDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -102,6 +113,7 @@ export function AddPayableDialog({ open, onOpenChange, suppliers, onCreate }: Ad
   useEffect(() => {
     if (open) {
       reset(EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, reset]);
 
@@ -110,22 +122,28 @@ export function AddPayableDialog({ open, onOpenChange, suppliers, onCreate }: Ad
   const isSupplierType = creditorType === "supplier";
   const selectedSupplier = suppliers.find((supplier) => supplier.id === supplierId);
 
-  const onSubmit = (values: PayableFormValues) => {
+  const onSubmit = async (values: PayableFormValues) => {
     const isSupplier = values.creditorType === "supplier";
     const supplier = suppliers.find((candidate) => candidate.id === values.supplierId);
 
-    onCreate({
-      creditorType: values.creditorType,
-      creditorName: isSupplier ? (supplier?.companyName ?? "") : values.creditorName,
-      supplierId: isSupplier ? values.supplierId : null,
-      amountBOB: values.amountBOB,
-      dueDate: values.dueDate,
-      category: values.category,
-      invoiceNumber: values.invoiceNumber,
-      notes: values.notes,
-    });
+    setErrorMessage(null);
 
-    onOpenChange(false);
+    try {
+      await onCreate({
+        creditorType: values.creditorType,
+        creditorName: isSupplier ? (supplier?.companyName ?? "") : values.creditorName,
+        supplierId: isSupplier ? values.supplierId : null,
+        amountBOB: values.amountBOB,
+        dueDate: values.dueDate,
+        category: values.category,
+        invoiceNumber: values.invoiceNumber,
+        notes: values.notes,
+      });
+
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -227,9 +245,15 @@ export function AddPayableDialog({ open, onOpenChange, suppliers, onCreate }: Ad
             <Textarea id="payable-notes" rows={3} {...register("notes")} />
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Crear cuenta por pagar
+            <Button
+              type="submit"
+              disabled={isCreating}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isCreating ? <Loader2 className="size-4 animate-spin" /> : "Crear cuenta por pagar"}
             </Button>
           </DialogFooter>
         </form>

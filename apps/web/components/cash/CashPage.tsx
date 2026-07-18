@@ -40,6 +40,8 @@ export function CashPage() {
           session={cash.session}
           onOpenSession={cash.openSession}
           onCloseSession={cash.closeSession}
+          isOpeningSession={cash.isOpeningSession}
+          isClosingSession={cash.isClosingSession}
           entries={cash.entries}
           isLoading={cash.isLoading}
           destinationBalances={cash.destinationBalances}
@@ -47,8 +49,11 @@ export function CashPage() {
           entryFilters={cash.entryFilters}
           onEntryFiltersChange={cash.setEntryFilters}
           onAddEntry={cash.addCashEntry}
+          isAddingEntry={cash.isAddingEntry}
           onCancelEntry={cash.cancelEntry}
+          cancelingEntryId={cash.cancelingEntryId}
           onAddPartnerDistribution={cash.addPartnerDistribution}
+          isAddingDistribution={cash.isAddingDistribution}
           canCreate={canCreateCash}
           canCancel={isAdmin}
         />
@@ -62,7 +67,9 @@ export function CashPage() {
           onFiltersChange={cash.setPayableFilters}
           suppliers={suppliers}
           onCreatePayable={cash.createPayable}
+          isCreatingPayable={cash.isCreatingPayable}
           onAddPayment={cash.addPayablePayment}
+          isAddingPayment={cash.isAddingPayablePayment}
           canCreate={canCreateCash}
           canEdit={canEditCash}
         />

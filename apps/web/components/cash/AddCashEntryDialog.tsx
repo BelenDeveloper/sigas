@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/ui/select";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -34,6 +35,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method"
 const DESCRIPTION_REQUIRED_MESSAGE = "La descripción es obligatoria.";
 const DESTINATION_REQUIRED_MESSAGE = "Ingresa el destino de la cuenta.";
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
+const SAVE_ERROR_MESSAGE = "No se pudo registrar el movimiento. Intenta nuevamente.";
 
 const ENTRY_TYPE_LABELS: Record<CashEntryType, string> = {
   income: "Ingreso",
@@ -79,10 +81,13 @@ const EMPTY_VALUES: CashEntryFormInput = {
 interface AddCashEntryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (input: CashEntryInput) => void;
+  isCreating: boolean;
+  onCreate: (input: CashEntryInput) => Promise<void>;
 }
 
-export function AddCashEntryDialog({ open, onOpenChange, onCreate }: AddCashEntryDialogProps) {
+export function AddCashEntryDialog({ open, onOpenChange, isCreating, onCreate }: AddCashEntryDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -98,6 +103,7 @@ export function AddCashEntryDialog({ open, onOpenChange, onCreate }: AddCashEntr
   useEffect(() => {
     if (open) {
       reset(EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, reset]);
 
@@ -111,9 +117,15 @@ export function AddCashEntryDialog({ open, onOpenChange, onCreate }: AddCashEntr
     setValue("category", nextType === "income" ? DEFAULT_INCOME_CATEGORY : DEFAULT_EXPENSE_CATEGORY);
   };
 
-  const onSubmit = (values: CashEntryFormValues) => {
-    onCreate(values);
-    onOpenChange(false);
+  const onSubmit = async (values: CashEntryFormValues) => {
+    setErrorMessage(null);
+
+    try {
+      await onCreate(values);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -215,9 +227,15 @@ export function AddCashEntryDialog({ open, onOpenChange, onCreate }: AddCashEntr
             ) : null}
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              Registrar movimiento
+            <Button
+              type="submit"
+              disabled={isCreating}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isCreating ? <Loader2 className="size-4 animate-spin" /> : "Registrar movimiento"}
             </Button>
           </DialogFooter>
         </form>

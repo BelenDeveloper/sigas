@@ -22,17 +22,22 @@ import { WhereIsTheMoneyCard } from "./WhereIsTheMoneyCard";
 
 interface CashTabProps {
   session: CashSessionView | null;
-  onOpenSession: () => void;
-  onCloseSession: (closingAmountBOB: number) => void;
+  onOpenSession: () => Promise<void>;
+  onCloseSession: (closingAmountBOB: number) => Promise<void>;
+  isOpeningSession: boolean;
+  isClosingSession: boolean;
   entries: CashEntryView[];
   isLoading: boolean;
   destinationBalances: DestinationBalance[];
   totalCashBalanceBOB: number;
   entryFilters: CashEntryFilterState;
   onEntryFiltersChange: (filters: Partial<CashEntryFilterState>) => void;
-  onAddEntry: (input: CashEntryInput) => void;
-  onCancelEntry: (entryId: string) => void;
-  onAddPartnerDistribution: (input: PartnerDistributionInput) => void;
+  onAddEntry: (input: CashEntryInput) => Promise<void>;
+  isAddingEntry: boolean;
+  onCancelEntry: (entryId: string) => Promise<void>;
+  cancelingEntryId: string | null;
+  onAddPartnerDistribution: (input: PartnerDistributionInput) => Promise<void>;
+  isAddingDistribution: boolean;
   canCreate: boolean;
   canCancel: boolean;
 }
@@ -41,6 +46,8 @@ export function CashTab({
   session,
   onOpenSession,
   onCloseSession,
+  isOpeningSession,
+  isClosingSession,
   entries,
   isLoading,
   destinationBalances,
@@ -48,8 +55,11 @@ export function CashTab({
   entryFilters,
   onEntryFiltersChange,
   onAddEntry,
+  isAddingEntry,
   onCancelEntry,
+  cancelingEntryId,
   onAddPartnerDistribution,
+  isAddingDistribution,
   canCreate,
   canCancel,
 }: CashTabProps) {
@@ -60,7 +70,13 @@ export function CashTab({
 
   return (
     <div className="flex flex-col gap-6">
-      <CashSessionHeader session={session} onOpenSession={onOpenSession} onCloseSession={onCloseSession} />
+      <CashSessionHeader
+        session={session}
+        onOpenSession={onOpenSession}
+        onCloseSession={onCloseSession}
+        isOpeningSession={isOpeningSession}
+        isClosingSession={isClosingSession}
+      />
 
       <WhereIsTheMoneyCard destinationBalances={destinationBalances} totalBOB={totalCashBalanceBOB} />
 
@@ -92,18 +108,21 @@ export function CashTab({
         entries={entries}
         isLoading={isLoading}
         canCancel={canCancel}
-        onCancelEntry={onCancelEntry}
+        cancelingEntryId={cancelingEntryId}
+        onCancelEntry={(entryId) => onCancelEntry(entryId).catch(() => undefined)}
       />
 
       <AddCashEntryDialog
         open={isAddEntryDialogOpen}
         onOpenChange={setIsAddEntryDialogOpen}
+        isCreating={isAddingEntry}
         onCreate={onAddEntry}
       />
 
       <PartnerDistributionDialog
         open={isPartnerDialogOpen}
         onOpenChange={setIsPartnerDialogOpen}
+        isCreating={isAddingDistribution}
         onCreate={onAddPartnerDistribution}
       />
     </div>

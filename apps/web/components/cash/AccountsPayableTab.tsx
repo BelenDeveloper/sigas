@@ -18,8 +18,10 @@ interface AccountsPayableTabProps {
   filters: PayableFilterState;
   onFiltersChange: (filters: Partial<PayableFilterState>) => void;
   suppliers: Supplier[];
-  onCreatePayable: (input: PayableInput) => void;
-  onAddPayment: (payableId: string, payment: PayablePaymentInput) => void;
+  onCreatePayable: (input: PayableInput) => Promise<void>;
+  isCreatingPayable: boolean;
+  onAddPayment: (payableId: string, payment: PayablePaymentInput) => Promise<void>;
+  isAddingPayment: boolean;
   canCreate: boolean;
   canEdit: boolean;
 }
@@ -31,7 +33,9 @@ export function AccountsPayableTab({
   onFiltersChange,
   suppliers,
   onCreatePayable,
+  isCreatingPayable,
   onAddPayment,
+  isAddingPayment,
   canCreate,
   canEdit,
 }: AccountsPayableTabProps) {
@@ -70,6 +74,7 @@ export function AccountsPayableTab({
         open={isPayableDialogOpen}
         onOpenChange={setIsPayableDialogOpen}
         suppliers={suppliers}
+        isCreating={isCreatingPayable}
         onCreate={onCreatePayable}
       />
 
@@ -77,6 +82,7 @@ export function AccountsPayableTab({
         payable={payableForPayment}
         open={isPaymentDialogOpen}
         onOpenChange={setIsPaymentDialogOpen}
+        isSaving={isAddingPayment}
         onConfirm={onAddPayment}
       />
     </div>

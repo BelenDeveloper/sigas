@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 import { cn } from "@repo/ui/lib/utils";
-import { Ban } from "lucide-react";
+import { Ban, Loader2 } from "lucide-react";
 
 import type { CashEntryView } from "@/hooks/use-cash";
 import { CASH_ENTRY_CATEGORY_LABELS, type CashEntryType } from "@/lib/cash-types";
@@ -41,10 +41,17 @@ interface CashEntryTableProps {
   entries: CashEntryView[];
   isLoading: boolean;
   canCancel: boolean;
+  cancelingEntryId: string | null;
   onCancelEntry: (entryId: string) => void;
 }
 
-export function CashEntryTable({ entries, isLoading, canCancel, onCancelEntry }: CashEntryTableProps) {
+export function CashEntryTable({
+  entries,
+  isLoading,
+  canCancel,
+  cancelingEntryId,
+  onCancelEntry,
+}: CashEntryTableProps) {
   const columnCount = canCancel ? 8 : 7;
 
   return (
@@ -94,9 +101,14 @@ export function CashEntryTable({ entries, isLoading, canCancel, onCancelEntry }:
                       variant="ghost"
                       size="icon-sm"
                       aria-label="Cancelar movimiento"
+                      disabled={cancelingEntryId === entry.id}
                       onClick={() => onCancelEntry(entry.id)}
                     >
-                      <Ban className="size-4" />
+                      {cancelingEntryId === entry.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Ban className="size-4" />
+                      )}
                     </Button>
                   ) : null}
                 </TableCell>

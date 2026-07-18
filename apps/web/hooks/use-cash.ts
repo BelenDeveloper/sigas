@@ -192,23 +192,30 @@ function toPayable(payable: {
 
 interface UseCashResult {
   session: CashSessionView | null;
-  openSession: () => void;
-  closeSession: (closingAmountBOB: number) => void;
+  openSession: () => Promise<void>;
+  closeSession: (closingAmountBOB: number) => Promise<void>;
   entries: CashEntryView[];
   destinationBalances: DestinationBalance[];
   totalCashBalanceBOB: number;
   entryFilters: CashEntryFilterState;
   setEntryFilters: (filters: Partial<CashEntryFilterState>) => void;
-  addCashEntry: (input: CashEntryInput) => void;
-  cancelEntry: (entryId: string) => void;
-  addPartnerDistribution: (input: PartnerDistributionInput) => void;
+  addCashEntry: (input: CashEntryInput) => Promise<void>;
+  cancelEntry: (entryId: string) => Promise<void>;
+  addPartnerDistribution: (input: PartnerDistributionInput) => Promise<void>;
   isLoading: boolean;
+  isOpeningSession: boolean;
+  isClosingSession: boolean;
+  isAddingEntry: boolean;
+  cancelingEntryId: string | null;
+  isAddingDistribution: boolean;
   payables: PayableView[];
   payableFilters: PayableFilterState;
   setPayableFilters: (filters: Partial<PayableFilterState>) => void;
-  createPayable: (input: PayableInput) => void;
-  addPayablePayment: (payableId: string, payment: PayablePaymentInput) => void;
+  createPayable: (input: PayableInput) => Promise<void>;
+  addPayablePayment: (payableId: string, payment: PayablePaymentInput) => Promise<void>;
   isLoadingPayables: boolean;
+  isCreatingPayable: boolean;
+  isAddingPayablePayment: boolean;
 }
 
 export function useCash(): UseCashResult {
@@ -318,20 +325,20 @@ export function useCash(): UseCashResult {
     });
   }, [rawPayables, payableFilters]);
 
-  const openSession = () => {
-    openSessionMutation.mutate();
+  const openSession = async () => {
+    await openSessionMutation.mutateAsync();
   };
 
-  const closeSession = (closingAmountBOB: number) => {
+  const closeSession = async (closingAmountBOB: number) => {
     if (!session) {
       return;
     }
 
-    closeSessionMutation.mutate({ sessionId: session.id, closingAmount: closingAmountBOB });
+    await closeSessionMutation.mutateAsync({ sessionId: session.id, closingAmount: closingAmountBOB });
   };
 
-  const addCashEntry = (input: CashEntryInput) => {
-    addEntryMutation.mutate({
+  const addCashEntry = async (input: CashEntryInput) => {
+    await addEntryMutation.mutateAsync({
       type: input.type,
       category: input.category,
       description: input.description,
@@ -341,12 +348,12 @@ export function useCash(): UseCashResult {
     });
   };
 
-  const cancelEntry = (entryId: string) => {
-    cancelEntryMutation.mutate({ id: entryId });
+  const cancelEntry = async (entryId: string) => {
+    await cancelEntryMutation.mutateAsync({ id: entryId });
   };
 
-  const addPartnerDistribution = (input: PartnerDistributionInput) => {
-    addPartnerDistributionMutation.mutate({
+  const addPartnerDistribution = async (input: PartnerDistributionInput) => {
+    await addPartnerDistributionMutation.mutateAsync({
       partnerName: input.partnerName,
       amount: input.amountBOB,
       paymentMethod: input.method,
@@ -354,8 +361,8 @@ export function useCash(): UseCashResult {
     });
   };
 
-  const createPayable = (input: PayableInput) => {
-    createPayableMutation.mutate({
+  const createPayable = async (input: PayableInput) => {
+    await createPayableMutation.mutateAsync({
       creditorType: input.creditorType,
       supplierId: input.supplierId ?? undefined,
       creditorName: input.creditorName,
@@ -367,8 +374,8 @@ export function useCash(): UseCashResult {
     });
   };
 
-  const addPayablePayment = (payableId: string, payment: PayablePaymentInput) => {
-    addPayablePaymentMutation.mutate({
+  const addPayablePayment = async (payableId: string, payment: PayablePaymentInput) => {
+    await addPayablePaymentMutation.mutateAsync({
       payableId,
       amount: payment.amountBOB,
       paymentMethod: payment.method,
@@ -389,12 +396,19 @@ export function useCash(): UseCashResult {
     cancelEntry,
     addPartnerDistribution,
     isLoading: rawEntries === undefined,
+    isOpeningSession: openSessionMutation.isPending,
+    isClosingSession: closeSessionMutation.isPending,
+    isAddingEntry: addEntryMutation.isPending,
+    cancelingEntryId: cancelEntryMutation.isPending ? (cancelEntryMutation.variables?.id ?? null) : null,
+    isAddingDistribution: addPartnerDistributionMutation.isPending,
     payables,
     payableFilters,
     setPayableFilters,
     createPayable,
     addPayablePayment,
     isLoadingPayables: rawPayables === undefined,
+    isCreatingPayable: createPayableMutation.isPending,
+    isAddingPayablePayment: addPayablePaymentMutation.isPending,
   };
 }
 

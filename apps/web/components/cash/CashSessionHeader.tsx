@@ -14,6 +14,7 @@ import { Button } from "@repo/ui/components/ui/button";
 import { Card, CardContent } from "@repo/ui/components/ui/card";
 import { Input } from "@repo/ui/components/ui/input";
 import { Label } from "@repo/ui/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
 import type { CashSessionView } from "@/hooks/use-cash";
@@ -21,6 +22,8 @@ import type { CashSessionView } from "@/hooks/use-cash";
 const TIME_LOCALE = "es-BO";
 const NO_OPEN_SESSION_MESSAGE = "No hay sesión abierta";
 const INVALID_CLOSING_AMOUNT_MESSAGE = "Ingresa un monto de cierre válido.";
+const OPEN_SESSION_ERROR_MESSAGE = "No se pudo abrir la sesión de caja. Intenta nuevamente.";
+const CLOSE_SESSION_ERROR_MESSAGE = "No se pudo cerrar la sesión de caja. Intenta nuevamente.";
 
 function formatTime(isoDateTime: string): string {
   return new Date(isoDateTime).toLocaleTimeString(TIME_LOCALE, {
@@ -31,22 +34,43 @@ function formatTime(isoDateTime: string): string {
 
 interface CashSessionHeaderProps {
   session: CashSessionView | null;
-  onOpenSession: () => void;
-  onCloseSession: (closingAmountBOB: number) => void;
+  onOpenSession: () => Promise<void>;
+  onCloseSession: (closingAmountBOB: number) => Promise<void>;
+  isOpeningSession: boolean;
+  isClosingSession: boolean;
 }
 
-export function CashSessionHeader({ session, onOpenSession, onCloseSession }: CashSessionHeaderProps) {
+export function CashSessionHeader({
+  session,
+  onOpenSession,
+  onCloseSession,
+  isOpeningSession,
+  isClosingSession,
+}: CashSessionHeaderProps) {
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [closingAmountText, setClosingAmountText] = useState("");
   const [hasInvalidAmount, setHasInvalidAmount] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState<string | null>(null);
 
   const handleOpenCloseDialog = () => {
     setClosingAmountText("");
     setHasInvalidAmount(false);
+    setCloseError(null);
     setIsCloseDialogOpen(true);
   };
 
-  const handleConfirmClose = () => {
+  const handleOpenSession = async () => {
+    setOpenError(null);
+
+    try {
+      await onOpenSession();
+    } catch {
+      setOpenError(OPEN_SESSION_ERROR_MESSAGE);
+    }
+  };
+
+  const handleConfirmClose = async () => {
     const closingAmountBOB = Number(closingAmountText);
 
     if (closingAmountText.trim() === "" || Number.isNaN(closingAmountBOB)) {
@@ -54,8 +78,14 @@ export function CashSessionHeader({ session, onOpenSession, onCloseSession }: Ca
       return;
     }
 
-    onCloseSession(closingAmountBOB);
-    setIsCloseDialogOpen(false);
+    setCloseError(null);
+
+    try {
+      await onCloseSession(closingAmountBOB);
+      setIsCloseDialogOpen(false);
+    } catch {
+      setCloseError(CLOSE_SESSION_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -67,6 +97,7 @@ export function CashSessionHeader({ session, onOpenSession, onCloseSession }: Ca
               ? `Sesión abierta desde las ${formatTime(session.openedAt)}`
               : NO_OPEN_SESSION_MESSAGE}
           </span>
+          {openError ? <p className="text-sm text-destructive">{openError}</p> : null}
         </div>
 
         {session?.isOpen ? (
@@ -74,8 +105,12 @@ export function CashSessionHeader({ session, onOpenSession, onCloseSession }: Ca
             Cerrar sesión
           </Button>
         ) : (
-          <Button className="bg-brand text-brand-foreground hover:bg-brand/90" onClick={onOpenSession}>
-            Abrir sesión
+          <Button
+            className="bg-brand text-brand-foreground hover:bg-brand/90"
+            disabled={isOpeningSession}
+            onClick={handleOpenSession}
+          >
+            {isOpeningSession ? <Loader2 className="size-4 animate-spin" /> : "Abrir sesión"}
           </Button>
         )}
       </CardContent>
@@ -101,11 +136,14 @@ export function CashSessionHeader({ session, onOpenSession, onCloseSession }: Ca
             {hasInvalidAmount ? (
               <p className="text-sm text-destructive">{INVALID_CLOSING_AMOUNT_MESSAGE}</p>
             ) : null}
+            {closeError ? <p className="text-sm text-destructive">{closeError}</p> : null}
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmClose}>Confirmar cierre</AlertDialogAction>
+            <AlertDialogCancel disabled={isClosingSession}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={isClosingSession} onClick={handleConfirmClose}>
+              {isClosingSession ? <Loader2 className="size-4 animate-spin" /> : "Confirmar cierre"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
