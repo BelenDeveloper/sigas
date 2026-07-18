@@ -40,3 +40,6 @@ yarn-error.log*
 # .claudeignore
 graph.json
 graphify-out/
+
+# NEX migration (one-off scripts + source data with real client/business data — never commit)
+packages/db/migration-nex/
