@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 import { useAtomValue } from "jotai";
-import { ArrowLeft, Ban, Plus } from "lucide-react";
+import { ArrowLeft, Ban, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -44,6 +44,8 @@ const DATE_LOCALE = "es-BO";
 const CANCELLED_STATUS = "cancelled";
 const CANCEL_REASON_REQUIRED_MESSAGE = "Ingresa el motivo de la cancelación.";
 const ACCOUNT_DESTINATION_REQUIRED_MESSAGE = "Indica a dónde fue el dinero (cuenta destino).";
+const CANCEL_SALE_ERROR_MESSAGE = "No se pudo cancelar la venta. Intenta nuevamente.";
+const ADD_PAYMENT_ERROR_MESSAGE = "No se pudo registrar el pago. Intenta nuevamente.";
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "qr", "bank_transfer", "check", "credit_card"];
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = "cash";
 const EMPTY_PAYMENT: SalePaymentInput = {
@@ -70,7 +72,8 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
   const canEditSale = hasModulePermission(authUser, SALES_MODULE, "canEdit");
   const isAdmin = authUser?.role === ADMIN_ROLE;
 
-  const { sale, isLoading, addPayment, cancelSale } = useSale(saleId);
+  const { sale, isLoading, addPayment, cancelSale, isSubmittingPayment, isCancelingSale } =
+    useSale(saleId);
 
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [newPayment, setNewPayment] = useState<SalePaymentInput>(EMPTY_PAYMENT);
@@ -101,28 +104,38 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
 
   const canCancelSale = isAdmin && sale.status !== CANCELLED_STATUS;
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     if (!newPayment.accountDestination.trim()) {
       setPaymentError(ACCOUNT_DESTINATION_REQUIRED_MESSAGE);
       return;
     }
 
-    addPayment(newPayment);
     setPaymentError(null);
-    setNewPayment(EMPTY_PAYMENT);
-    setIsAddingPayment(false);
+
+    try {
+      await addPayment(newPayment);
+      setNewPayment(EMPTY_PAYMENT);
+      setIsAddingPayment(false);
+    } catch {
+      setPaymentError(ADD_PAYMENT_ERROR_MESSAGE);
+    }
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!cancelReason.trim()) {
       setCancelError(CANCEL_REASON_REQUIRED_MESSAGE);
       return;
     }
 
-    cancelSale(cancelReason);
     setCancelError(null);
-    setCancelReason("");
-    setIsCancelling(false);
+
+    try {
+      await cancelSale(cancelReason);
+      setCancelReason("");
+      setIsCancelling(false);
+    } catch {
+      setCancelError(CANCEL_SALE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -173,11 +186,12 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
                 {cancelError ? <p className="text-sm text-destructive">{cancelError}</p> : null}
               </div>
               <div className="flex gap-2">
-                <Button variant="destructive" onClick={handleConfirmCancel}>
-                  Confirmar cancelación
+                <Button variant="destructive" disabled={isCancelingSale} onClick={handleConfirmCancel}>
+                  {isCancelingSale ? <Loader2 className="size-4 animate-spin" /> : "Confirmar cancelación"}
                 </Button>
                 <Button
                   variant="outline"
+                  disabled={isCancelingSale}
                   onClick={() => {
                     setIsCancelling(false);
                     setCancelError(null);
@@ -309,12 +323,14 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
               <div className="flex gap-2 sm:col-span-3">
                 <Button
                   className="bg-brand text-brand-foreground hover:bg-brand/90"
+                  disabled={isSubmittingPayment}
                   onClick={handleConfirmPayment}
                 >
-                  Confirmar pago
+                  {isSubmittingPayment ? <Loader2 className="size-4 animate-spin" /> : "Confirmar pago"}
                 </Button>
                 <Button
                   variant="outline"
+                  disabled={isSubmittingPayment}
                   onClick={() => {
                     setIsAddingPayment(false);
                     setPaymentError(null);

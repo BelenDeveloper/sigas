@@ -189,8 +189,10 @@ export function useSales(): UseSalesResult {
 interface UseSaleResult {
   sale: SaleDetail | undefined;
   isLoading: boolean;
-  addPayment: (payment: SalePaymentInput) => void;
-  cancelSale: (reason: string) => void;
+  addPayment: (payment: SalePaymentInput) => Promise<void>;
+  cancelSale: (reason: string) => Promise<void>;
+  isSubmittingPayment: boolean;
+  isCancelingSale: boolean;
 }
 
 export function useSale(saleId: string): UseSaleResult {
@@ -245,13 +247,20 @@ export function useSale(saleId: string): UseSaleResult {
     };
   }, [rawSale]);
 
-  const addPayment = (payment: SalePaymentInput) => {
-    addPaymentMutation.mutate(toSalePaymentMutationInput(saleId, payment));
+  const addPayment = async (payment: SalePaymentInput) => {
+    await addPaymentMutation.mutateAsync(toSalePaymentMutationInput(saleId, payment));
   };
 
-  const cancelSale = (reason: string) => {
-    cancelMutation.mutate({ id: saleId, reason });
+  const cancelSale = async (reason: string) => {
+    await cancelMutation.mutateAsync({ id: saleId, reason });
   };
 
-  return { sale, isLoading, addPayment, cancelSale };
+  return {
+    sale,
+    isLoading,
+    addPayment,
+    cancelSale,
+    isSubmittingPayment: addPaymentMutation.isPending,
+    isCancelingSale: cancelMutation.isPending,
+  };
 }

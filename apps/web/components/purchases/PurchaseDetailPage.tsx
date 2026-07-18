@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 import { useAtomValue } from "jotai";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -46,6 +46,7 @@ const EMPTY_PAYMENT: PurchasePaymentInput = {
   accountDestination: "",
 };
 const ACCOUNT_DESTINATION_REQUIRED_MESSAGE = "Indica a dónde fue el dinero (cuenta destino).";
+const ADD_PAYMENT_ERROR_MESSAGE = "No se pudo registrar el pago. Intenta nuevamente.";
 
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString(DATE_LOCALE, {
@@ -64,7 +65,7 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
   const canViewPurchases = hasModulePermission(authUser, PURCHASES_MODULE, "canView");
   const canEditPurchase = hasModulePermission(authUser, PURCHASES_MODULE, "canEdit");
 
-  const { purchase, isLoading, addPayment } = usePurchase(purchaseId);
+  const { purchase, isLoading, addPayment, isSubmittingPayment } = usePurchase(purchaseId);
 
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [newPayment, setNewPayment] = useState<PurchasePaymentInput>(EMPTY_PAYMENT);
@@ -95,16 +96,21 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
     );
   }
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     if (!newPayment.accountDestination.trim()) {
       setPaymentError(ACCOUNT_DESTINATION_REQUIRED_MESSAGE);
       return;
     }
 
-    addPayment(newPayment);
     setPaymentError(null);
-    setNewPayment(EMPTY_PAYMENT);
-    setIsAddingPayment(false);
+
+    try {
+      await addPayment(newPayment);
+      setNewPayment(EMPTY_PAYMENT);
+      setIsAddingPayment(false);
+    } catch {
+      setPaymentError(ADD_PAYMENT_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -259,12 +265,14 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
               <div className="flex gap-2 sm:col-span-3">
                 <Button
                   className="bg-brand text-brand-foreground hover:bg-brand/90"
+                  disabled={isSubmittingPayment}
                   onClick={handleConfirmPayment}
                 >
-                  Confirmar pago
+                  {isSubmittingPayment ? <Loader2 className="size-4 animate-spin" /> : "Confirmar pago"}
                 </Button>
                 <Button
                   variant="outline"
+                  disabled={isSubmittingPayment}
                   onClick={() => {
                     setIsAddingPayment(false);
                     setPaymentError(null);

@@ -13,6 +13,7 @@ import {
 } from "@repo/ui/components/ui/select";
 import { Textarea } from "@repo/ui/components/ui/textarea";
 import { useAtomValue } from "jotai";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -158,7 +159,7 @@ export function PurchaseFormPage() {
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={isSaving} className="bg-brand text-brand-foreground hover:bg-brand/90">
-          Guardar compra
+          {isSaving ? <Loader2 className="size-4 animate-spin" /> : "Guardar compra"}
         </Button>
       </div>
     </div>

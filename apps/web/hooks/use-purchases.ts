@@ -174,7 +174,8 @@ export function usePurchases(): UsePurchasesResult {
 interface UsePurchaseResult {
   purchase: PurchaseDetail | undefined;
   isLoading: boolean;
-  addPayment: (payment: PurchasePaymentInput) => void;
+  addPayment: (payment: PurchasePaymentInput) => Promise<void>;
+  isSubmittingPayment: boolean;
 }
 
 export function usePurchase(purchaseId: string): UsePurchaseResult {
@@ -226,9 +227,9 @@ export function usePurchase(purchaseId: string): UsePurchaseResult {
     };
   }, [rawPurchase]);
 
-  const addPayment = (payment: PurchasePaymentInput) => {
-    addPaymentMutation.mutate(toPurchasePaymentMutationInput(purchaseId, payment));
+  const addPayment = async (payment: PurchasePaymentInput) => {
+    await addPaymentMutation.mutateAsync(toPurchasePaymentMutationInput(purchaseId, payment));
   };
 
-  return { purchase, isLoading, addPayment };
+  return { purchase, isLoading, addPayment, isSubmittingPayment: addPaymentMutation.isPending };
 }
