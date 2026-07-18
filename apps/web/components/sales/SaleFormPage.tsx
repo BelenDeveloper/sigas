@@ -35,6 +35,15 @@ const ITEMS_REQUIRED_MESSAGE = "Agrega al menos un producto con cantidad válida
 const CREATE_ERROR_MESSAGE = "No se pudo crear la venta. Intenta nuevamente.";
 const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para crear ventas.";
 
+type DiscountMode = "amount" | "percent";
+
+const DEFAULT_DISCOUNT_MODE: DiscountMode = "amount";
+const DISCOUNT_MODE_LABELS: Record<DiscountMode, string> = {
+  amount: "Bs.",
+  percent: "%",
+};
+const PERCENT_MAX = 100;
+
 function todayISODate(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -52,7 +61,8 @@ export function SaleFormPage() {
   const [type, setType] = useState<SaleType>(DEFAULT_SALE_TYPE);
   const [date, setDate] = useState(todayISODate());
   const [notes, setNotes] = useState("");
-  const [discountBOB, setDiscountBOB] = useState(0);
+  const [discountMode, setDiscountMode] = useState<DiscountMode>(DEFAULT_DISCOUNT_MODE);
+  const [discountValue, setDiscountValue] = useState(0);
   const [items, setItems] = useState<SaleItemInput[]>([]);
   const [payments, setPayments] = useState<SalePaymentInput[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -63,6 +73,8 @@ export function SaleFormPage() {
   }
 
   const subtotalBOB = items.reduce((sum, item) => sum + item.quantity * item.unitPriceBOB, 0);
+  const discountBOB =
+    discountMode === "percent" ? subtotalBOB * (discountValue / PERCENT_MAX) : discountValue;
   const totalBOB = subtotalBOB - discountBOB;
 
   const handleSave = async () => {
@@ -151,15 +163,30 @@ export function SaleFormPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="sale-form-discount">Descuento (Bs.)</Label>
-            <Input
-              id="sale-form-discount"
-              type="number"
-              step="0.01"
-              min={0}
-              value={discountBOB}
-              onChange={(event) => setDiscountBOB(Number(event.target.value))}
-            />
+            <Label htmlFor="sale-form-discount">Descuento</Label>
+            <div className="flex gap-2">
+              <Input
+                id="sale-form-discount"
+                type="number"
+                step="0.01"
+                min={0}
+                max={discountMode === "percent" ? PERCENT_MAX : undefined}
+                value={discountValue}
+                onChange={(event) => setDiscountValue(Number(event.target.value))}
+              />
+              <Select
+                value={discountMode}
+                onValueChange={(value) => setDiscountMode((value ?? DEFAULT_DISCOUNT_MODE) as DiscountMode)}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue>{() => DISCOUNT_MODE_LABELS[discountMode]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="amount">{DISCOUNT_MODE_LABELS.amount}</SelectItem>
+                  <SelectItem value="percent">{DISCOUNT_MODE_LABELS.percent}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:col-span-2">
