@@ -21,6 +21,7 @@ import { useClients } from "@/hooks/use-clients";
 import { useInventory } from "@/hooks/use-inventory";
 import { useSales, type SaleItemInput, type SalePaymentInput } from "@/hooks/use-sales";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS, type DiscountType } from "@/lib/discount-types";
 import { hasModulePermission } from "@/lib/permission-helpers";
 import { SALE_TYPES, SALE_TYPE_LABELS, type SaleType } from "@/lib/sale-types";
 
@@ -34,14 +35,7 @@ const CLIENT_REQUIRED_MESSAGE = "Selecciona un cliente antes de continuar.";
 const ITEMS_REQUIRED_MESSAGE = "Agrega al menos un producto con cantidad válida.";
 const CREATE_ERROR_MESSAGE = "No se pudo crear la venta. Intenta nuevamente.";
 const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para crear ventas.";
-
-type DiscountMode = "amount" | "percent";
-
-const DEFAULT_DISCOUNT_MODE: DiscountMode = "amount";
-const DISCOUNT_MODE_LABELS: Record<DiscountMode, string> = {
-  amount: "Bs.",
-  percent: "%",
-};
+const DEFAULT_DISCOUNT_MODE: DiscountType = "amount";
 const PERCENT_MAX = 100;
 
 function todayISODate(): string {
@@ -61,7 +55,7 @@ export function SaleFormPage() {
   const [type, setType] = useState<SaleType>(DEFAULT_SALE_TYPE);
   const [date, setDate] = useState(todayISODate());
   const [notes, setNotes] = useState("");
-  const [discountMode, setDiscountMode] = useState<DiscountMode>(DEFAULT_DISCOUNT_MODE);
+  const [discountMode, setDiscountMode] = useState<DiscountType>(DEFAULT_DISCOUNT_MODE);
   const [discountValue, setDiscountValue] = useState(0);
   const [items, setItems] = useState<SaleItemInput[]>([]);
   const [payments, setPayments] = useState<SalePaymentInput[]>([]);
@@ -76,6 +70,15 @@ export function SaleFormPage() {
   const discountBOB =
     discountMode === "percent" ? subtotalBOB * (discountValue / PERCENT_MAX) : discountValue;
   const totalBOB = subtotalBOB - discountBOB;
+
+  const handleClientChange = (value: string | null) => {
+    const nextClientId = value ?? "";
+    setClientId(nextClientId);
+
+    const selectedClient = clients.find((client) => client.id === nextClientId);
+    setDiscountMode(selectedClient?.defaultDiscountType ?? DEFAULT_DISCOUNT_MODE);
+    setDiscountValue(selectedClient?.defaultDiscountValue ?? 0);
+  };
 
   const handleSave = async () => {
     if (!clientId) {
@@ -120,7 +123,7 @@ export function SaleFormPage() {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <Label htmlFor="sale-form-client">Cliente</Label>
-            <Select value={clientId} onValueChange={(value) => setClientId(value ?? "")}>
+            <Select value={clientId} onValueChange={handleClientChange}>
               <SelectTrigger id="sale-form-client">
                 <SelectValue>
                   {() => clients.find((client) => client.id === clientId)?.name ?? SELECT_CLIENT_PLACEHOLDER}
@@ -176,14 +179,17 @@ export function SaleFormPage() {
               />
               <Select
                 value={discountMode}
-                onValueChange={(value) => setDiscountMode((value ?? DEFAULT_DISCOUNT_MODE) as DiscountMode)}
+                onValueChange={(value) => setDiscountMode((value ?? DEFAULT_DISCOUNT_MODE) as DiscountType)}
               >
                 <SelectTrigger className="w-20">
-                  <SelectValue>{() => DISCOUNT_MODE_LABELS[discountMode]}</SelectValue>
+                  <SelectValue>{() => DISCOUNT_TYPE_LABELS[discountMode]}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="amount">{DISCOUNT_MODE_LABELS.amount}</SelectItem>
-                  <SelectItem value="percent">{DISCOUNT_MODE_LABELS.percent}</SelectItem>
+                  {DISCOUNT_TYPES.map((discountType) => (
+                    <SelectItem key={discountType} value={discountType}>
+                      {DISCOUNT_TYPE_LABELS[discountType]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

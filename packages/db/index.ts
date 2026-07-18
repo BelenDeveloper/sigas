@@ -28,8 +28,8 @@ export {
   CREDITOR_TYPES,
   PAYABLE_STATUSES,
 } from "./schema/cash.js";
-export type { Client, ClientDocumentType, NewClient } from "./schema/clients.js";
-export { CLIENT_DOCUMENT_TYPES } from "./schema/clients.js";
+export type { Client, ClientDiscountType, ClientDocumentType, NewClient } from "./schema/clients.js";
+export { CLIENT_DISCOUNT_TYPES, CLIENT_DOCUMENT_TYPES } from "./schema/clients.js";
 export type {
   Company,
   CompanyUserAccess,

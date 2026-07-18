@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type { Client, ClientDocumentType } from "@/lib/client-types";
+import type { DiscountType } from "@/lib/discount-types";
 import { trpc } from "@/lib/trpc/client";
 
 export const ALL_CITIES_OPTION = "all";
@@ -22,6 +23,8 @@ export interface ClientInput {
   address: string;
   neighborhood: string;
   city: string;
+  defaultDiscountType: DiscountType | null;
+  defaultDiscountValue: number | null;
 }
 
 const DEFAULT_FILTERS: ClientFilterState = {
@@ -54,6 +57,8 @@ function toClientInput(input: ClientInput) {
     address: input.address || undefined,
     neighborhood: input.neighborhood || undefined,
     city: input.city || undefined,
+    defaultDiscountType: input.defaultDiscountType ?? undefined,
+    defaultDiscountValue: input.defaultDiscountValue ?? undefined,
   };
 }
 
@@ -90,6 +95,8 @@ export function useClients(): UseClientsResult {
     neighborhood: string | null;
     city: string;
     isActive: boolean;
+    defaultDiscountType: DiscountType | null;
+    defaultDiscountValue: string | null;
   }): Client => ({
     id: client.id,
     name: client.name,
@@ -101,6 +108,8 @@ export function useClients(): UseClientsResult {
     neighborhood: client.neighborhood ?? "",
     city: client.city,
     isActive: client.isActive,
+    defaultDiscountType: client.defaultDiscountType,
+    defaultDiscountValue: client.defaultDiscountValue === null ? null : Number(client.defaultDiscountValue),
   });
 
   const clients = useMemo(() => (rawClients ?? []).map(toClient), [rawClients]);

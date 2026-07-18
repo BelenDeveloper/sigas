@@ -58,6 +58,8 @@ export class ClientsService {
         neighborhood: input.neighborhood,
         city: input.city,
         notes: input.notes,
+        defaultDiscountType: input.defaultDiscountType,
+        defaultDiscountValue: input.defaultDiscountValue?.toString(),
         createdBy,
       })
       .returning();
@@ -82,6 +84,8 @@ export class ClientsService {
         neighborhood: input.neighborhood,
         city: input.city,
         notes: input.notes,
+        defaultDiscountType: input.defaultDiscountType,
+        defaultDiscountValue: input.defaultDiscountValue?.toString(),
         isActive: input.isActive,
         updatedAt: new Date(),
       })

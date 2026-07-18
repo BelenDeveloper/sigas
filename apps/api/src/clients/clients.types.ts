@@ -1,4 +1,4 @@
-import type { Client, ClientDocumentType } from "@repo/db";
+import type { Client, ClientDiscountType, ClientDocumentType } from "@repo/db";
 
 export type { Client };
 
@@ -19,6 +19,8 @@ export interface CreateClientInput {
   neighborhood?: string;
   city?: string;
   notes?: string;
+  defaultDiscountType?: ClientDiscountType;
+  defaultDiscountValue?: number;
 }
 
 export interface UpdateClientInput extends CreateClientInput {

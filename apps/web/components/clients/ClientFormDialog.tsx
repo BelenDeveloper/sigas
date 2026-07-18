@@ -31,10 +31,12 @@ import {
   type Client,
   type ClientDocumentType,
 } from "@/lib/client-types";
+import { DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS, type DiscountType } from "@/lib/discount-types";
 
 const NAME_REQUIRED_MESSAGE = "El nombre es obligatorio.";
 const INVALID_EMAIL_MESSAGE = "Ingresa un correo electrónico válido.";
 const SAVE_ERROR_MESSAGE = "No se pudo guardar el cliente. Intenta nuevamente.";
+const DEFAULT_DISCOUNT_TYPE: DiscountType = "amount";
 
 const clientFormSchema = z.object({
   name: z.string().min(1, NAME_REQUIRED_MESSAGE),
@@ -45,6 +47,8 @@ const clientFormSchema = z.object({
   address: z.string(),
   neighborhood: z.string(),
   city: z.string(),
+  discountType: z.enum(DISCOUNT_TYPES),
+  discountValue: z.number().nonnegative(),
 });
 
 type ClientFormValues = z.infer<typeof clientFormSchema>;
@@ -58,6 +62,8 @@ const EMPTY_VALUES: ClientFormValues = {
   address: "",
   neighborhood: "",
   city: DEFAULT_CLIENT_CITY,
+  discountType: DEFAULT_DISCOUNT_TYPE,
+  discountValue: 0,
 };
 
 function toFormValues(client: Client): ClientFormValues {
@@ -70,6 +76,8 @@ function toFormValues(client: Client): ClientFormValues {
     address: client.address,
     neighborhood: client.neighborhood,
     city: client.city,
+    discountType: client.defaultDiscountType ?? DEFAULT_DISCOUNT_TYPE,
+    discountValue: client.defaultDiscountValue ?? 0,
   };
 }
 
@@ -119,11 +127,17 @@ export function ClientFormDialog({
   const onSubmit = async (values: ClientFormValues) => {
     setErrorMessage(null);
 
+    const input: ClientInput = {
+      ...values,
+      defaultDiscountType: values.discountValue > 0 ? values.discountType : null,
+      defaultDiscountValue: values.discountValue > 0 ? values.discountValue : null,
+    };
+
     try {
       if (isEditMode && client) {
-        await onUpdate(client.id, values);
+        await onUpdate(client.id, input);
       } else {
-        await onCreate(values);
+        await onCreate(input);
       }
 
       onOpenChange(false);
@@ -197,6 +211,37 @@ export function ClientFormDialog({
             <div className="flex flex-col gap-2">
               <Label htmlFor="client-form-city">Ciudad</Label>
               <Input id="client-form-city" {...register("city")} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="client-form-discount-value">Descuento por defecto</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="client-form-discount-value"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  max={watch("discountType") === "percent" ? 100 : undefined}
+                  {...register("discountValue", { valueAsNumber: true })}
+                />
+                <Select
+                  value={watch("discountType")}
+                  onValueChange={(value) =>
+                    setValue("discountType", (value ?? DEFAULT_DISCOUNT_TYPE) as DiscountType)
+                  }
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue>{() => DISCOUNT_TYPE_LABELS[watch("discountType")]}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DISCOUNT_TYPES.map((discountType) => (
+                      <SelectItem key={discountType} value={discountType}>
+                        {DISCOUNT_TYPE_LABELS[discountType]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

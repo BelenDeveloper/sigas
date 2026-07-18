@@ -1,4 +1,4 @@
-import { CLIENT_DOCUMENT_TYPES } from "@repo/db";
+import { CLIENT_DISCOUNT_TYPES, CLIENT_DOCUMENT_TYPES } from "@repo/db";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -28,6 +28,8 @@ const createClientInputSchema = z.object({
   neighborhood: z.string().optional(),
   city: z.string().optional(),
   notes: z.string().optional(),
+  defaultDiscountType: z.enum(CLIENT_DISCOUNT_TYPES).optional(),
+  defaultDiscountValue: z.number().nonnegative().optional(),
 });
 
 const updateClientInputSchema = createClientInputSchema.extend({

@@ -1,3 +1,5 @@
+import type { DiscountType } from "./discount-types";
+
 export const CLIENT_DOCUMENT_TYPES = ["CI", "NIT", "passport"] as const;
 export type ClientDocumentType = (typeof CLIENT_DOCUMENT_TYPES)[number];
 
@@ -20,4 +22,6 @@ export interface Client {
   neighborhood: string;
   city: string;
   isActive: boolean;
+  defaultDiscountType: DiscountType | null;
+  defaultDiscountValue: number | null;
 }

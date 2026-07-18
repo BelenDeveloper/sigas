@@ -1,9 +1,12 @@
-import { boolean, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { users } from "./users.js";
 
 export const CLIENT_DOCUMENT_TYPES = ["CI", "NIT", "passport"] as const;
 export type ClientDocumentType = (typeof CLIENT_DOCUMENT_TYPES)[number];
+
+export const CLIENT_DISCOUNT_TYPES = ["amount", "percent"] as const;
+export type ClientDiscountType = (typeof CLIENT_DISCOUNT_TYPES)[number];
 
 const DEFAULT_CLIENT_CITY = "Cochabamba";
 
@@ -20,6 +23,8 @@ export const clients = pgTable(
     neighborhood: text("neighborhood"),
     city: text("city").notNull().default(DEFAULT_CLIENT_CITY),
     notes: text("notes"),
+    defaultDiscountType: text("default_discount_type", { enum: CLIENT_DISCOUNT_TYPES }),
+    defaultDiscountValue: numeric("default_discount_value", { precision: 12, scale: 2 }),
     isActive: boolean("is_active").notNull().default(true),
     createdBy: uuid("created_by")
       .notNull()
