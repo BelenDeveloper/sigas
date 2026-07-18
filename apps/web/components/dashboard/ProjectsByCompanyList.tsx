@@ -2,7 +2,7 @@ import { Badge } from "@repo/ui/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 
 import { ListSkeleton } from "@/components/shared/ListSkeleton";
-import type { CompanyProjects } from "@/lib/mocks/dashboard.mock";
+import type { CompanyProjects } from "@/lib/dashboard-types";
 
 const SKELETON_ITEMS = 3;
 const SKELETON_ITEM_CLASS_NAME = "h-10 w-full";

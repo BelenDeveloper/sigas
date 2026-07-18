@@ -29,6 +29,7 @@ export interface SaleBalance {
 
 export interface SaleFilters {
   clientId?: string;
+  companyId?: string;
   type?: SaleType;
   status?: SaleStatus;
   dateFrom?: string;

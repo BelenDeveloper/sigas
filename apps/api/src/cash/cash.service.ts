@@ -29,6 +29,7 @@ import {
   type PayableFilters,
   type PayablePayment,
   type WhereIsTheMoneyEntry,
+  type WhereIsTheMoneyFilters,
 } from "./cash.types.js";
 
 const OPEN_SESSION_STATUS = "open";
@@ -208,11 +209,19 @@ export class CashService {
     return distribution;
   }
 
-  async getWhereIsTheMoney(sessionId?: string): Promise<WhereIsTheMoneyEntry[]> {
+  async getWhereIsTheMoney(filters: WhereIsTheMoneyFilters = {}): Promise<WhereIsTheMoneyEntry[]> {
     const conditions = [eq(schema.cashEntries.cancelled, false)];
 
-    if (sessionId) {
-      conditions.push(eq(schema.cashEntries.sessionId, sessionId));
+    if (filters.sessionId) {
+      conditions.push(eq(schema.cashEntries.sessionId, filters.sessionId));
+    }
+
+    if (filters.dateFrom) {
+      conditions.push(gte(schema.cashEntries.createdAt, filters.dateFrom));
+    }
+
+    if (filters.dateTo) {
+      conditions.push(lte(schema.cashEntries.createdAt, filters.dateTo));
     }
 
     const entries = await db

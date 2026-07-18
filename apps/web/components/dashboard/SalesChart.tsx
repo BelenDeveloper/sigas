@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import type { MonthlySales } from "@/lib/mocks/dashboard.mock";
+import type { MonthlySales } from "@/lib/dashboard-types";
 
 const CHART_STROKE_COLOR = "var(--brand)";
 const THOUSAND = 1000;

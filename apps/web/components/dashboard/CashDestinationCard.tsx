@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 
 import { formatCurrencyBOB } from "@/lib/format-currency";
-import type { CashDestination } from "@/lib/mocks/dashboard.mock";
+import type { CashDestination } from "@/lib/dashboard-types";
 
 interface CashDestinationCardProps {
   destinations: CashDestination[];

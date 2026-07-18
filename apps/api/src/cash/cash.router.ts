@@ -42,7 +42,11 @@ const addManualEntryInputSchema = z.object({
 
 const cancelEntryInputSchema = z.object({ id: z.string().uuid() });
 
-const whereIsTheMoneyInputSchema = z.object({ sessionId: z.string().uuid().optional() });
+const whereIsTheMoneyInputSchema = z.object({
+  sessionId: z.string().uuid().optional(),
+  dateFrom: z.coerce.date().optional(),
+  dateTo: z.coerce.date().optional(),
+});
 
 const dailySummaryInputSchema = z.object({ sessionId: z.string().uuid() });
 
@@ -151,7 +155,7 @@ export const cashRouter = router({
 
   getWhereIsTheMoney: protectedProcedure.input(whereIsTheMoneyInputSchema).query(({ ctx, input }) => {
     requirePermission(ctx, CASH_MODULE, "view");
-    return cashService.getWhereIsTheMoney(input.sessionId);
+    return cashService.getWhereIsTheMoney(input);
   }),
 
   getDailySummary: protectedProcedure.input(dailySummaryInputSchema).query(({ ctx, input }) => {

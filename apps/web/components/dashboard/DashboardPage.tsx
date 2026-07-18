@@ -10,6 +10,7 @@ import { CashDestinationCard } from "./CashDestinationCard";
 import { KpiCard } from "./KpiCard";
 import { LowStockList } from "./LowStockList";
 import { PendingPaymentsList } from "./PendingPaymentsList";
+import { PeriodFilter } from "./PeriodFilter";
 import { ProjectsByCompanyList } from "./ProjectsByCompanyList";
 import { SalesChart } from "./SalesChart";
 
@@ -18,55 +19,77 @@ export function DashboardPage() {
     companies,
     selectedCompanyId,
     setSelectedCompanyId,
+    period,
+    customFrom,
+    customTo,
+    setPeriod,
+    setCustomFrom,
+    setCustomTo,
     monthlySales,
-    kpis,
+    salesTotalBOB,
+    salesTrendPercent,
+    cashNetBOB,
+    cashTrendPercent,
     cashDestinations,
     lowStockProducts,
     pendingPayments,
+    clientsWithDebtCount,
+    activeProjectsCount,
     projectsByCompany,
     isLoading,
   } = useDashboard();
 
   return (
     <div className="flex flex-col gap-6">
-      <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-        <SelectTrigger className="w-64">
-          <SelectValue>
-            {(value: string | null) =>
-              companies.find((company) => company.id === value)?.name
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {companies.map((company) => (
-            <SelectItem key={company.id} value={company.id}>
-              {company.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex flex-wrap items-center gap-4">
+        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+          <SelectTrigger className="w-64">
+            <SelectValue>
+              {(value: string | null) =>
+                companies.find((company) => company.id === value)?.name
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {companies.map((company) => (
+              <SelectItem key={company.id} value={company.id}>
+                {company.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <PeriodFilter
+          period={period}
+          customFrom={customFrom}
+          customTo={customTo}
+          onPeriodChange={setPeriod}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Ventas del mes"
-          value={formatCurrencyBOB(kpis.monthlySalesBOB)}
+          label="Ventas del período"
+          value={formatCurrencyBOB(salesTotalBOB)}
           icon={CircleDollarSign}
-          trendPercent={kpis.monthlySalesTrendPercent}
+          trendPercent={salesTrendPercent}
         />
         <KpiCard
-          label="Saldo en caja"
-          value={formatCurrencyBOB(kpis.cashBalanceBOB)}
+          label="Movimiento de caja del período"
+          value={formatCurrencyBOB(cashNetBOB)}
           icon={Wallet}
-          trendPercent={kpis.cashBalanceTrendPercent}
+          trendPercent={cashTrendPercent}
         />
         <KpiCard
           label="Clientes con deuda"
-          value={String(kpis.clientsWithDebtCount)}
+          value={String(clientsWithDebtCount)}
           icon={UserRoundX}
         />
         <KpiCard
           label="Proyectos activos"
-          value={String(kpis.activeProjectsCount)}
+          value={String(activeProjectsCount)}
           icon={FolderKanban}
         />
       </div>

@@ -55,6 +55,12 @@ export interface WhereIsTheMoneyEntry {
   total: number;
 }
 
+export interface WhereIsTheMoneyFilters {
+  sessionId?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
 export interface DailySummary {
   totalIncome: number;
   totalExpense: number;

@@ -13,6 +13,7 @@ const salesService = new SalesService();
 
 const saleFiltersInputSchema = z.object({
   clientId: z.string().uuid().optional(),
+  companyId: z.string().uuid().optional(),
   type: z.enum(SALE_TYPES).optional(),
   status: z.enum(SALE_STATUSES).optional(),
   dateFrom: z.string().optional(),

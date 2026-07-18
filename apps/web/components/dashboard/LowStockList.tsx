@@ -2,7 +2,7 @@ import { Badge } from "@repo/ui/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 
 import { ListSkeleton } from "@/components/shared/ListSkeleton";
-import type { LowStockProduct } from "@/lib/mocks/dashboard.mock";
+import type { LowStockProduct } from "@/lib/dashboard-types";
 
 const CRITICAL_STOCK_LABEL = "Crítico";
 const SKELETON_ITEMS = 4;

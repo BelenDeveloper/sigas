@@ -38,6 +38,10 @@ export class SalesService {
       conditions.push(eq(schema.sales.clientId, filters.clientId));
     }
 
+    if (filters.companyId) {
+      conditions.push(eq(schema.sales.companyId, filters.companyId));
+    }
+
     if (filters.type) {
       conditions.push(eq(schema.sales.type, filters.type));
     }
