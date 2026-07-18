@@ -24,7 +24,16 @@ export function CompaniesPage() {
   const authUser = useAtomValue(authUserAtom);
   const isAdmin = authUser?.role === ADMIN_ROLE;
 
-  const { companies, createCompany, updateCompany, updateCompanyAccess, isLoading } = useCompanies();
+  const {
+    companies,
+    createCompany,
+    updateCompany,
+    updateCompanyAccess,
+    isLoading,
+    isCreating,
+    isUpdating,
+    isUpdatingAccess,
+  } = useCompanies();
   const { users } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -92,6 +101,8 @@ export function CompaniesPage() {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         company={editingCompany}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
         onCreate={createCompany}
         onUpdate={updateCompany}
       />
@@ -101,6 +112,7 @@ export function CompaniesPage() {
         onOpenChange={setIsAccessEditorOpen}
         company={companyForAccess}
         users={users}
+        isSaving={isUpdatingAccess}
         onSave={updateCompanyAccess}
       />
     </div>

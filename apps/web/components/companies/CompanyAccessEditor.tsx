@@ -18,12 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { UserAccessInput } from "@/hooks/use-companies";
 import type { Company, CompanyAccessEntry } from "@/lib/company-types";
 import { trpc } from "@/lib/trpc/client";
 import type { AdminUser } from "@/lib/user-permissions";
+
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el acceso. Intenta nuevamente.";
 
 function buildAccessDraft(users: AdminUser[], accessEntries: CompanyAccessEntry[]): UserAccessInput[] {
   return users.map((user) => {
@@ -42,6 +45,7 @@ interface CompanyAccessEditorProps {
   onOpenChange: (open: boolean) => void;
   company: Company | null;
   users: AdminUser[];
+  isSaving: boolean;
   onSave: (companyId: string, accessList: UserAccessInput[]) => Promise<void>;
 }
 
@@ -50,9 +54,11 @@ export function CompanyAccessEditor({
   onOpenChange,
   company,
   users,
+  isSaving,
   onSave,
 }: CompanyAccessEditorProps) {
   const [accessDraft, setAccessDraft] = useState<UserAccessInput[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: accessEntries } = trpc.companies.getAccessList.useQuery(
     { companyId: company?.id ?? "" },
@@ -62,6 +68,7 @@ export function CompanyAccessEditor({
   useEffect(() => {
     if (open && company) {
       setAccessDraft(buildAccessDraft(users, accessEntries ?? []));
+      setErrorMessage(null);
     }
   }, [open, company, users, accessEntries]);
 
@@ -86,8 +93,14 @@ export function CompanyAccessEditor({
   };
 
   const handleSave = async () => {
-    await onSave(company.id, accessDraft);
-    onOpenChange(false);
+    setErrorMessage(null);
+
+    try {
+      await onSave(company.id, accessDraft);
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -132,12 +145,15 @@ export function CompanyAccessEditor({
           </TableBody>
         </Table>
 
+        {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
         <DialogFooter>
           <Button
+            disabled={isSaving}
             className="bg-brand text-brand-foreground hover:bg-brand/90"
             onClick={() => void handleSave()}
           >
-            Guardar
+            {isSaving ? <Loader2 className="size-4 animate-spin" /> : "Guardar"}
           </Button>
         </DialogFooter>
       </DialogContent>

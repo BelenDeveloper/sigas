@@ -33,6 +33,9 @@ export function SuppliersPage() {
     updateSupplier,
     toggleSupplierActive,
     isLoading,
+    isCreating,
+    isUpdating,
+    togglingSupplierId,
   } = useSuppliers();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -77,14 +80,19 @@ export function SuppliersPage() {
         isLoading={isLoading}
         canEdit={canEditSupplier}
         canToggleActive={canToggleActive}
+        togglingSupplierId={togglingSupplierId}
         onEdit={handleEditSupplier}
-        onToggleActive={(supplier) => toggleSupplierActive(supplier.id)}
+        onToggleActive={(supplier) => {
+          toggleSupplierActive(supplier.id).catch(() => undefined);
+        }}
       />
 
       <SupplierFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         supplier={editingSupplier}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
         onCreate={createSupplier}
         onUpdate={updateSupplier}
       />

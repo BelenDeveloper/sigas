@@ -14,10 +14,17 @@ export type UserProfileUpdateInput = Omit<UserProfileInput, "password" | "email"
 
 interface UseUsersResult {
   users: AdminUser[];
-  createUser: (profile: UserProfileInput, permissions: ModulePermission[]) => void;
-  updateUser: (userId: string, profile: UserProfileUpdateInput, permissions: ModulePermission[]) => void;
-  toggleUserActive: (userId: string) => void;
+  createUser: (profile: UserProfileInput, permissions: ModulePermission[]) => Promise<void>;
+  updateUser: (
+    userId: string,
+    profile: UserProfileUpdateInput,
+    permissions: ModulePermission[],
+  ) => Promise<void>;
+  toggleUserActive: (userId: string) => Promise<void>;
   isLoading: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
+  togglingUserId: string | null;
 }
 
 export function useUsers(): UseUsersResult {
@@ -33,29 +40,42 @@ export function useUsers(): UseUsersResult {
   });
   const toggleActiveMutation = trpc.users.toggleActive.useMutation({ onSuccess: invalidateUsers });
 
-  const createUser = (profile: UserProfileInput, permissions: ModulePermission[]) => {
-    createMutation.mutate({ ...profile, permissions });
+  const createUser = async (profile: UserProfileInput, permissions: ModulePermission[]) => {
+    await createMutation.mutateAsync({ ...profile, permissions });
   };
 
-  const updateUser = (
+  const updateUser = async (
     userId: string,
     profile: UserProfileUpdateInput,
     permissions: ModulePermission[],
   ) => {
     const currentUser = data?.find((user) => user.id === userId);
 
-    updateMutation.mutate({
-      id: userId,
-      name: profile.name,
-      role: profile.role,
-      isActive: currentUser?.isActive ?? true,
-    });
-    updatePermissionsMutation.mutate({ userId, permissions });
+    await Promise.all([
+      updateMutation.mutateAsync({
+        id: userId,
+        name: profile.name,
+        role: profile.role,
+        isActive: currentUser?.isActive ?? true,
+      }),
+      updatePermissionsMutation.mutateAsync({ userId, permissions }),
+    ]);
   };
 
-  const toggleUserActive = (userId: string) => {
-    toggleActiveMutation.mutate({ id: userId });
+  const toggleUserActive = async (userId: string) => {
+    await toggleActiveMutation.mutateAsync({ id: userId });
   };
 
-  return { users: data ?? [], createUser, updateUser, toggleUserActive, isLoading: data === undefined };
+  return {
+    users: data ?? [],
+    createUser,
+    updateUser,
+    toggleUserActive,
+    isLoading: data === undefined,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending || updatePermissionsMutation.isPending,
+    togglingUserId: toggleActiveMutation.isPending
+      ? (toggleActiveMutation.variables?.id ?? null)
+      : null,
+  };
 }

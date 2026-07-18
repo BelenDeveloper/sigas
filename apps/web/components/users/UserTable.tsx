@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
-import { Pencil, Power } from "lucide-react";
+import { Loader2, Pencil, Power } from "lucide-react";
 
 import { ADMIN_USER_ROLE_LABELS, type AdminUser } from "@/lib/user-permissions";
 import { formatModuleAccessSummary } from "@/lib/permission-helpers";
@@ -24,11 +24,18 @@ const COLUMN_COUNT = 6;
 interface UserTableProps {
   users: AdminUser[];
   isLoading: boolean;
+  togglingUserId: string | null;
   onEdit: (user: AdminUser) => void;
   onToggleActive: (user: AdminUser) => void;
 }
 
-export function UserTable({ users, isLoading, onEdit, onToggleActive }: UserTableProps) {
+export function UserTable({
+  users,
+  isLoading,
+  togglingUserId,
+  onEdit,
+  onToggleActive,
+}: UserTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -81,9 +88,14 @@ export function UserTable({ users, isLoading, onEdit, onToggleActive }: UserTabl
                     variant="ghost"
                     size="icon-sm"
                     aria-label={user.isActive ? "Desactivar usuario" : "Activar usuario"}
+                    disabled={togglingUserId === user.id}
                     onClick={() => onToggleActive(user)}
                   >
-                    <Power className="size-4" />
+                    {togglingUserId === user.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Power className="size-4" />
+                    )}
                   </Button>
                 </div>
               </TableCell>

@@ -12,7 +12,8 @@ import {
 import { Input } from "@repo/ui/components/ui/input";
 import { Label } from "@repo/ui/components/ui/label";
 import { Textarea } from "@repo/ui/components/ui/textarea";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -21,6 +22,7 @@ import { DEFAULT_SUPPLIER_COUNTRY, type Supplier } from "@/lib/supplier-types";
 
 const COMPANY_NAME_REQUIRED_MESSAGE = "El nombre de la empresa es obligatorio.";
 const INVALID_EMAIL_MESSAGE = "Ingresa un correo electrónico válido.";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el proveedor. Intenta nuevamente.";
 
 const supplierFormSchema = z.object({
   companyName: z.string().min(1, COMPANY_NAME_REQUIRED_MESSAGE),
@@ -66,18 +68,25 @@ interface SupplierFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supplier: Supplier | null;
-  onCreate: (input: SupplierInput) => void;
-  onUpdate: (supplierId: string, input: SupplierInput) => void;
+  isCreating: boolean;
+  isUpdating: boolean;
+  onCreate: (input: SupplierInput) => Promise<void>;
+  onUpdate: (supplierId: string, input: SupplierInput) => Promise<void>;
 }
 
 export function SupplierFormDialog({
   open,
   onOpenChange,
   supplier,
+  isCreating,
+  isUpdating,
   onCreate,
   onUpdate,
 }: SupplierFormDialogProps) {
   const isEditMode = supplier !== null;
+  const isSaving = isEditMode ? isUpdating : isCreating;
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -92,17 +101,24 @@ export function SupplierFormDialog({
   useEffect(() => {
     if (open) {
       reset(supplier ? toFormValues(supplier) : EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, supplier, reset]);
 
-  const onSubmit = (values: SupplierFormValues) => {
-    if (isEditMode && supplier) {
-      onUpdate(supplier.id, values);
-    } else {
-      onCreate(values);
-    }
+  const onSubmit = async (values: SupplierFormValues) => {
+    setErrorMessage(null);
 
-    onOpenChange(false);
+    try {
+      if (isEditMode && supplier) {
+        await onUpdate(supplier.id, values);
+      } else {
+        await onCreate(values);
+      }
+
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -166,9 +182,21 @@ export function SupplierFormDialog({
             <Textarea id="supplier-form-notes" rows={3} {...register("notes")} />
           </div>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              {isEditMode ? "Guardar cambios" : "Crear proveedor"}
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isEditMode ? (
+                "Guardar cambios"
+              ) : (
+                "Crear proveedor"
+              )}
             </Button>
           </DialogFooter>
         </form>

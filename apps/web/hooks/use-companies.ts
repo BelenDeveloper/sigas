@@ -17,10 +17,13 @@ export interface UserAccessInput {
 
 interface UseCompaniesResult {
   companies: Company[];
-  createCompany: (input: CompanyInput) => void;
-  updateCompany: (companyId: string, input: CompanyInput) => void;
+  createCompany: (input: CompanyInput) => Promise<void>;
+  updateCompany: (companyId: string, input: CompanyInput) => Promise<void>;
   updateCompanyAccess: (companyId: string, accessList: UserAccessInput[]) => Promise<void>;
   isLoading: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
+  isUpdatingAccess: boolean;
 }
 
 export function useCompanies(): UseCompaniesResult {
@@ -33,12 +36,12 @@ export function useCompanies(): UseCompaniesResult {
   const updateMutation = trpc.companies.update.useMutation({ onSuccess: invalidateCompanies });
   const updateAccessMutation = trpc.companies.updateAccess.useMutation();
 
-  const createCompany = (input: CompanyInput) => {
-    createMutation.mutate({ name: input.name, description: input.description });
+  const createCompany = async (input: CompanyInput) => {
+    await createMutation.mutateAsync({ name: input.name, description: input.description });
   };
 
-  const updateCompany = (companyId: string, input: CompanyInput) => {
-    updateMutation.mutate({
+  const updateCompany = async (companyId: string, input: CompanyInput) => {
+    await updateMutation.mutateAsync({
       id: companyId,
       name: input.name,
       description: input.description,
@@ -67,5 +70,8 @@ export function useCompanies(): UseCompaniesResult {
     updateCompany,
     updateCompanyAccess,
     isLoading: data === undefined,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isUpdatingAccess: updateAccessMutation.isPending,
   };
 }

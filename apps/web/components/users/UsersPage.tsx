@@ -19,7 +19,16 @@ export function UsersPage() {
   const authUser = useAtomValue(authUserAtom);
   const isAdmin = authUser?.role === ADMIN_ROLE;
 
-  const { users, createUser, updateUser, toggleUserActive, isLoading } = useUsers();
+  const {
+    users,
+    createUser,
+    updateUser,
+    toggleUserActive,
+    isLoading,
+    isCreating,
+    isUpdating,
+    togglingUserId,
+  } = useUsers();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
@@ -50,14 +59,19 @@ export function UsersPage() {
       <UserTable
         users={users}
         isLoading={isLoading}
+        togglingUserId={togglingUserId}
         onEdit={handleEditUser}
-        onToggleActive={(user) => toggleUserActive(user.id)}
+        onToggleActive={(user) => {
+          toggleUserActive(user.id).catch(() => undefined);
+        }}
       />
 
       <UserFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         user={editingUser}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
         onCreate={createUser}
         onUpdate={updateUser}
       />

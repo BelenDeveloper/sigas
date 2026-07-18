@@ -21,10 +21,13 @@ interface UseSuppliersResult {
   suppliers: Supplier[];
   searchTerm: string;
   setSearchTerm: (searchTerm: string) => void;
-  createSupplier: (input: SupplierInput) => void;
-  updateSupplier: (supplierId: string, input: SupplierInput) => void;
-  toggleSupplierActive: (supplierId: string) => void;
+  createSupplier: (input: SupplierInput) => Promise<void>;
+  updateSupplier: (supplierId: string, input: SupplierInput) => Promise<void>;
+  toggleSupplierActive: (supplierId: string) => Promise<void>;
   isLoading: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
+  togglingSupplierId: string | null;
 }
 
 function toSupplierInput(input: SupplierInput) {
@@ -89,22 +92,22 @@ export function useSuppliers(): UseSuppliersResult {
   const getSupplierById = (supplierId: string) =>
     suppliers.find((supplier) => supplier.id === supplierId);
 
-  const createSupplier = (input: SupplierInput) => {
-    createMutation.mutate(toSupplierInput(input));
+  const createSupplier = async (input: SupplierInput) => {
+    await createMutation.mutateAsync(toSupplierInput(input));
   };
 
-  const updateSupplier = (supplierId: string, input: SupplierInput) => {
+  const updateSupplier = async (supplierId: string, input: SupplierInput) => {
     const currentSupplier = getSupplierById(supplierId);
 
-    updateMutation.mutate({
+    await updateMutation.mutateAsync({
       id: supplierId,
       ...toSupplierInput(input),
       isActive: currentSupplier?.isActive ?? true,
     });
   };
 
-  const toggleSupplierActive = (supplierId: string) => {
-    toggleActiveMutation.mutate({ id: supplierId });
+  const toggleSupplierActive = async (supplierId: string) => {
+    await toggleActiveMutation.mutateAsync({ id: supplierId });
   };
 
   return {
@@ -115,5 +118,10 @@ export function useSuppliers(): UseSuppliersResult {
     updateSupplier,
     toggleSupplierActive,
     isLoading: rawSuppliers === undefined,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    togglingSupplierId: toggleActiveMutation.isPending
+      ? (toggleActiveMutation.variables?.id ?? null)
+      : null,
   };
 }

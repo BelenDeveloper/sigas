@@ -13,7 +13,8 @@ import { Input } from "@repo/ui/components/ui/input";
 import { Label } from "@repo/ui/components/ui/label";
 import { Switch } from "@repo/ui/components/ui/switch";
 import { Textarea } from "@repo/ui/components/ui/textarea";
-import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -21,6 +22,7 @@ import type { CompanyInput } from "@/hooks/use-companies";
 import type { Company } from "@/lib/company-types";
 
 const NAME_REQUIRED_MESSAGE = "El nombre de la empresa es obligatorio.";
+const SAVE_ERROR_MESSAGE = "No se pudo guardar la empresa. Intenta nuevamente.";
 
 const companyFormSchema = z.object({
   name: z.string().min(1, NAME_REQUIRED_MESSAGE),
@@ -44,18 +46,25 @@ interface CompanyFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   company: Company | null;
-  onCreate: (input: CompanyInput) => void;
-  onUpdate: (companyId: string, input: CompanyInput) => void;
+  isCreating: boolean;
+  isUpdating: boolean;
+  onCreate: (input: CompanyInput) => Promise<void>;
+  onUpdate: (companyId: string, input: CompanyInput) => Promise<void>;
 }
 
 export function CompanyFormDialog({
   open,
   onOpenChange,
   company,
+  isCreating,
+  isUpdating,
   onCreate,
   onUpdate,
 }: CompanyFormDialogProps) {
   const isEditMode = company !== null;
+  const isSaving = isEditMode ? isUpdating : isCreating;
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -72,19 +81,26 @@ export function CompanyFormDialog({
   useEffect(() => {
     if (open) {
       reset(company ? toFormValues(company) : EMPTY_VALUES);
+      setErrorMessage(null);
     }
   }, [open, company, reset]);
 
   const isActive = watch("isActive");
 
-  const onSubmit = (values: CompanyFormValues) => {
-    if (isEditMode && company) {
-      onUpdate(company.id, values);
-    } else {
-      onCreate(values);
-    }
+  const onSubmit = async (values: CompanyFormValues) => {
+    setErrorMessage(null);
 
-    onOpenChange(false);
+    try {
+      if (isEditMode && company) {
+        await onUpdate(company.id, values);
+      } else {
+        await onCreate(values);
+      }
+
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -117,9 +133,21 @@ export function CompanyFormDialog({
             </div>
           ) : null}
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              {isEditMode ? "Guardar cambios" : "Crear empresa"}
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isEditMode ? (
+                "Guardar cambios"
+              ) : (
+                "Crear empresa"
+              )}
             </Button>
           </DialogFooter>
         </form>

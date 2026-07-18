@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/ui/table";
-import { Pencil, Power } from "lucide-react";
+import { Loader2, Pencil, Power } from "lucide-react";
 
 import type { Supplier } from "@/lib/supplier-types";
 
@@ -25,6 +25,7 @@ interface SupplierTableProps {
   isLoading: boolean;
   canEdit: boolean;
   canToggleActive: boolean;
+  togglingSupplierId: string | null;
   onEdit: (supplier: Supplier) => void;
   onToggleActive: (supplier: Supplier) => void;
 }
@@ -34,6 +35,7 @@ export function SupplierTable({
   isLoading,
   canEdit,
   canToggleActive,
+  togglingSupplierId,
   onEdit,
   onToggleActive,
 }: SupplierTableProps) {
@@ -96,9 +98,14 @@ export function SupplierTable({
                       variant="ghost"
                       size="icon-sm"
                       aria-label={supplier.isActive ? "Desactivar proveedor" : "Activar proveedor"}
+                      disabled={togglingSupplierId === supplier.id}
                       onClick={() => onToggleActive(supplier)}
                     >
-                      <Power className="size-4" />
+                      {togglingSupplierId === supplier.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Power className="size-4" />
+                      )}
                     </Button>
                   ) : null}
                 </div>

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -39,6 +40,7 @@ const NAME_REQUIRED_MESSAGE = "El nombre es obligatorio.";
 const INVALID_EMAIL_MESSAGE = "Ingresa un correo electrónico válido.";
 const PASSWORD_REQUIRED_MESSAGE = "La contraseña es obligatoria.";
 const MIN_PASSWORD_LENGTH = 6;
+const SAVE_ERROR_MESSAGE = "No se pudo guardar el usuario. Intenta nuevamente.";
 
 const DEFAULT_ROLE: AdminUserRole = "sales";
 
@@ -78,12 +80,29 @@ interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: AdminUser | null;
-  onCreate: (profile: UserProfileInput, permissions: ModulePermission[]) => void;
-  onUpdate: (userId: string, profile: UserProfileUpdateInput, permissions: ModulePermission[]) => void;
+  isCreating: boolean;
+  isUpdating: boolean;
+  onCreate: (profile: UserProfileInput, permissions: ModulePermission[]) => Promise<void>;
+  onUpdate: (
+    userId: string,
+    profile: UserProfileUpdateInput,
+    permissions: ModulePermission[],
+  ) => Promise<void>;
 }
 
-export function UserFormDialog({ open, onOpenChange, user, onCreate, onUpdate }: UserFormDialogProps) {
+export function UserFormDialog({
+  open,
+  onOpenChange,
+  user,
+  isCreating,
+  isUpdating,
+  onCreate,
+  onUpdate,
+}: UserFormDialogProps) {
   const isEditMode = user !== null;
+  const isSaving = isEditMode ? isUpdating : isCreating;
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -103,19 +122,26 @@ export function UserFormDialog({ open, onOpenChange, user, onCreate, onUpdate }:
     if (open) {
       reset(user ? toFormValues(user) : EMPTY_VALUES);
       setPermissions(user ? user.permissions : buildEmptyPermissions());
+      setErrorMessage(null);
     }
   }, [open, user, reset]);
 
   const role = watch("role");
 
-  const onSubmit = (values: ProfileFormValues) => {
-    if (isEditMode && user) {
-      onUpdate(user.id, { name: values.name, role: values.role }, permissions);
-    } else {
-      onCreate(values, permissions);
-    }
+  const onSubmit = async (values: ProfileFormValues) => {
+    setErrorMessage(null);
 
-    onOpenChange(false);
+    try {
+      if (isEditMode && user) {
+        await onUpdate(user.id, { name: values.name, role: values.role }, permissions);
+      } else {
+        await onCreate(values, permissions);
+      }
+
+      onOpenChange(false);
+    } catch {
+      setErrorMessage(SAVE_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -187,9 +213,21 @@ export function UserFormDialog({ open, onOpenChange, user, onCreate, onUpdate }:
             </TabsContent>
           </Tabs>
 
+          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
           <DialogFooter>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90">
-              {isEditMode ? "Guardar cambios" : "Crear usuario"}
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-brand text-brand-foreground hover:bg-brand/90"
+            >
+              {isSaving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isEditMode ? (
+                "Guardar cambios"
+              ) : (
+                "Crear usuario"
+              )}
             </Button>
           </DialogFooter>
         </form>
