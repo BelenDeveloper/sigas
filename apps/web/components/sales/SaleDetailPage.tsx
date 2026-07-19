@@ -32,6 +32,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method"
 import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { DetailPageSkeleton } from "../shared/DetailPageSkeleton";
+import { PrintReceiptButton } from "./PrintReceiptButton";
 import { SaleStatusBadge } from "./SaleStatusBadge";
 import { SalePdfButton } from "./SalePdfButton";
 
@@ -146,7 +147,10 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
           <ArrowLeft className="size-4" />
           Volver a ventas
         </Button>
-        <SalePdfButton saleId={sale.id} />
+        <div className="flex gap-2">
+          <PrintReceiptButton saleId={sale.id} />
+          <SalePdfButton saleId={sale.id} />
+        </div>
       </div>
 
       <Card>
