@@ -1,6 +1,6 @@
-import type { PaymentMethod, Sale, SaleItem, SalePayment, SaleStatus, SaleType } from "@repo/db";
+import type { PaymentMethod, Sale, SaleEdit, SaleItem, SalePayment, SaleStatus, SaleType } from "@repo/db";
 
-export type { Sale, SaleItem, SalePayment };
+export type { Sale, SaleEdit, SaleItem, SalePayment };
 
 export interface SaleListItem extends Sale {
   clientName: string | null;
@@ -14,9 +14,14 @@ export interface SaleItemWithProduct extends SaleItem {
   productSku: string;
 }
 
+export interface SaleEditWithUser extends SaleEdit {
+  editedByName: string | null;
+}
+
 export interface SaleWithRelations extends Sale {
   items: SaleItemWithProduct[];
   payments: SalePayment[];
+  edits: SaleEditWithUser[];
   totalPaid: number;
   totalPending: number;
 }
@@ -52,6 +57,12 @@ export interface CreateSaleInput {
   notes?: string;
   discount?: number;
   items: CreateSaleItemInput[];
+}
+
+export interface UpdateSaleInput {
+  discount?: number;
+  items: CreateSaleItemInput[];
+  editNote: string;
 }
 
 export interface AddSalePaymentInput {

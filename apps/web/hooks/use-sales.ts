@@ -74,6 +74,13 @@ export interface SalePaymentDetail {
   notes: string;
 }
 
+export interface SaleEditEntry {
+  id: string;
+  editedByName: string;
+  editedAt: string;
+  notes: string;
+}
+
 export interface SaleDetail {
   id: string;
   code: string;
@@ -89,6 +96,13 @@ export interface SaleDetail {
   pendingBOB: number;
   items: SaleItemDetail[];
   payments: SalePaymentDetail[];
+  edits: SaleEditEntry[];
+}
+
+export interface UpdateSaleInput {
+  discountBOB: number;
+  items: SaleItemInput[];
+  editNote: string;
 }
 
 const DEFAULT_FILTERS: SaleFilterState = {
@@ -191,8 +205,10 @@ interface UseSaleResult {
   isLoading: boolean;
   addPayment: (payment: SalePaymentInput) => Promise<void>;
   cancelSale: (reason: string) => Promise<void>;
+  updateSale: (input: UpdateSaleInput) => Promise<void>;
   isSubmittingPayment: boolean;
   isCancelingSale: boolean;
+  isUpdatingSale: boolean;
 }
 
 export function useSale(saleId: string): UseSaleResult {
@@ -207,6 +223,7 @@ export function useSale(saleId: string): UseSaleResult {
 
   const addPaymentMutation = trpc.sales.addPayment.useMutation({ onSuccess: invalidateSale });
   const cancelMutation = trpc.sales.cancel.useMutation({ onSuccess: invalidateSale });
+  const updateMutation = trpc.sales.update.useMutation({ onSuccess: invalidateSale });
 
   const sale = useMemo<SaleDetail | undefined>(() => {
     if (!rawSale) {
@@ -244,6 +261,12 @@ export function useSale(saleId: string): UseSaleResult {
         paidAt: String(payment.paidAt),
         notes: payment.notes ?? "",
       })),
+      edits: rawSale.edits.map((edit) => ({
+        id: edit.id,
+        editedByName: edit.editedByName ?? "",
+        editedAt: String(edit.editedAt),
+        notes: edit.notes,
+      })),
     };
   }, [rawSale]);
 
@@ -255,12 +278,27 @@ export function useSale(saleId: string): UseSaleResult {
     await cancelMutation.mutateAsync({ id: saleId, reason });
   };
 
+  const updateSale = async (input: UpdateSaleInput) => {
+    await updateMutation.mutateAsync({
+      id: saleId,
+      discount: input.discountBOB || undefined,
+      items: input.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPriceBOB,
+      })),
+      editNote: input.editNote,
+    });
+  };
+
   return {
     sale,
     isLoading,
     addPayment,
     cancelSale,
+    updateSale,
     isSubmittingPayment: addPaymentMutation.isPending,
     isCancelingSale: cancelMutation.isPending,
+    isUpdatingSale: updateMutation.isPending,
   };
 }

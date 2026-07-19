@@ -2,6 +2,7 @@ import { PAYMENT_METHODS, SALE_STATUSES, SALE_TYPES } from "@repo/db";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { InsufficientStockError, ProductNotFoundError } from "../inventory/inventory.types.js";
 import { requireAdmin, requirePermission } from "../trpc/guards.js";
 import { protectedProcedure, router } from "../trpc/trpc.service.js";
 import { SalesService } from "./sales.service.js";
@@ -40,6 +41,13 @@ const createSaleInputSchema = z.object({
   items: z.array(createSaleItemInputSchema).min(1),
 });
 
+const updateSaleInputSchema = z.object({
+  id: z.string().uuid(),
+  discount: z.number().nonnegative().optional(),
+  items: z.array(createSaleItemInputSchema).min(1),
+  editNote: z.string().trim().min(1),
+});
+
 const addPaymentInputSchema = z.object({
   saleId: z.string().uuid(),
   amount: z.number().positive(),
@@ -54,11 +62,15 @@ const cancelSaleInputSchema = z.object({
 });
 
 function toTrpcError(error: unknown): TRPCError {
-  if (error instanceof SaleNotFoundError) {
+  if (error instanceof SaleNotFoundError || error instanceof ProductNotFoundError) {
     return new TRPCError({ code: "NOT_FOUND", message: error.message });
   }
 
-  if (error instanceof EmptySaleError || error instanceof SaleAlreadyCancelledError) {
+  if (
+    error instanceof EmptySaleError ||
+    error instanceof SaleAlreadyCancelledError ||
+    error instanceof InsufficientStockError
+  ) {
     return new TRPCError({ code: "BAD_REQUEST", message: error.message });
   }
 
@@ -89,6 +101,18 @@ export const salesRouter = router({
 
     try {
       return await salesService.create(input, ctx.user.id);
+    } catch (error) {
+      throw toTrpcError(error);
+    }
+  }),
+
+  update: protectedProcedure.input(updateSaleInputSchema).mutation(async ({ ctx, input }) => {
+    requirePermission(ctx, SALES_MODULE, "edit");
+
+    const { id, ...updateInput } = input;
+
+    try {
+      return await salesService.update(id, updateInput, ctx.user.id);
     } catch (error) {
       throw toTrpcError(error);
     }

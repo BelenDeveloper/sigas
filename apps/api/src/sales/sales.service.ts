@@ -3,6 +3,7 @@ import { db, schema, type Sale, type SaleStatus } from "@repo/db";
 import { and, desc, eq, getTableColumns, gte, ilike, lte, or, sql } from "drizzle-orm";
 
 import { CashService } from "../cash/cash.service.js";
+import { InsufficientStockError, ProductNotFoundError } from "../inventory/inventory.types.js";
 import { InventoryService } from "../inventory/inventory.service.js";
 import {
   EmptySaleError,
@@ -15,6 +16,7 @@ import {
   type SaleListItem,
   type SalePayment,
   type SaleWithRelations,
+  type UpdateSaleInput,
 } from "./sales.types.js";
 
 const SALE_TYPE_CODE_PREFIXES: Record<Sale["type"], string> = {
@@ -112,12 +114,23 @@ export class SalesService {
       .where(eq(schema.salePayments.saleId, id))
       .orderBy(desc(schema.salePayments.paidAt));
 
+    const edits = await db
+      .select({
+        ...getTableColumns(schema.saleEdits),
+        editedByName: schema.users.name,
+      })
+      .from(schema.saleEdits)
+      .leftJoin(schema.users, eq(schema.saleEdits.editedBy, schema.users.id))
+      .where(eq(schema.saleEdits.saleId, id))
+      .orderBy(desc(schema.saleEdits.editedAt));
+
     const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
     return {
       ...sale,
       items,
       payments,
+      edits,
       totalPaid,
       totalPending: Number(sale.total) - totalPaid,
     };
@@ -183,6 +196,136 @@ export class SalesService {
     }
 
     return sale;
+  }
+
+  async update(id: string, input: UpdateSaleInput, userId: string): Promise<Sale> {
+    const [sale] = await db.select().from(schema.sales).where(eq(schema.sales.id, id)).limit(1);
+
+    if (!sale) {
+      throw new SaleNotFoundError(id);
+    }
+
+    if (sale.status === "cancelled") {
+      throw new SaleAlreadyCancelledError(id);
+    }
+
+    if (input.items.length === 0) {
+      throw new EmptySaleError();
+    }
+
+    const previousItems = await db
+      .select()
+      .from(schema.saleItems)
+      .where(eq(schema.saleItems.saleId, id));
+
+    const itemsWithSubtotal = input.items.map((item) => ({
+      ...item,
+      subtotal: item.quantity * item.unitPrice,
+    }));
+
+    const subtotal = itemsWithSubtotal.reduce((sum, item) => sum + item.subtotal, 0);
+    const discount = input.discount ?? 0;
+    const total = subtotal - discount;
+
+    if (sale.type === "sale") {
+      await this.assertSufficientStockForEdit(previousItems, itemsWithSubtotal);
+    }
+
+    const updatedSale = await db.transaction(async (tx) => {
+      await tx.delete(schema.saleItems).where(eq(schema.saleItems.saleId, id));
+
+      await tx.insert(schema.saleItems).values(
+        itemsWithSubtotal.map((item) => ({
+          saleId: id,
+          productId: item.productId,
+          quantity: item.quantity.toString(),
+          unitPrice: item.unitPrice.toString(),
+          subtotal: item.subtotal.toString(),
+          notes: item.notes,
+        })),
+      );
+
+      const [result] = await tx
+        .update(schema.sales)
+        .set({
+          subtotal: subtotal.toString(),
+          discount: discount.toString(),
+          total: total.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.sales.id, id))
+        .returning();
+
+      if (!result) {
+        throw new Error(`Failed to update sale: ${id}`);
+      }
+
+      await tx.insert(schema.saleEdits).values({
+        saleId: id,
+        editedBy: userId,
+        notes: input.editNote,
+      });
+
+      return result;
+    });
+
+    if (sale.type === "sale") {
+      for (const item of previousItems) {
+        await this.inventoryService.adjustStock(
+          item.productId,
+          Number(item.quantity),
+          `Edited sale ${sale.code} (reverted previous items)`,
+          userId,
+          { id, type: "sale" },
+        );
+      }
+
+      for (const item of itemsWithSubtotal) {
+        await this.inventoryService.adjustStock(
+          item.productId,
+          -item.quantity,
+          `Edited sale ${sale.code}`,
+          userId,
+          { id, type: "sale" },
+        );
+      }
+    }
+
+    return updatedSale;
+  }
+
+  private async assertSufficientStockForEdit(
+    previousItems: { productId: string; quantity: string }[],
+    nextItems: { productId: string; quantity: number }[],
+  ): Promise<void> {
+    const stockDeltaByProduct = new Map<string, number>();
+
+    for (const item of previousItems) {
+      stockDeltaByProduct.set(
+        item.productId,
+        (stockDeltaByProduct.get(item.productId) ?? 0) + Number(item.quantity),
+      );
+    }
+
+    for (const item of nextItems) {
+      stockDeltaByProduct.set(item.productId, (stockDeltaByProduct.get(item.productId) ?? 0) - item.quantity);
+    }
+
+    for (const [productId, delta] of stockDeltaByProduct) {
+      if (delta >= 0) {
+        continue;
+      }
+
+      const [product] = await db.select().from(schema.products).where(eq(schema.products.id, productId)).limit(1);
+
+      if (!product) {
+        throw new ProductNotFoundError(productId);
+      }
+
+      if (Number(product.currentStock) + delta < 0) {
+        throw new InsufficientStockError(productId);
+      }
+    }
   }
 
   async addPayment(saleId: string, payment: AddSalePaymentInput, userId: string): Promise<SalePayment> {

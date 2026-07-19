@@ -78,6 +78,13 @@
       "when": 1784418609963,
       "tag": "0010_add_client_default_discount",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784483842851,
+      "tag": "0011_add_sale_edits",
+      "breakpoints": true
     }
   ]
 }

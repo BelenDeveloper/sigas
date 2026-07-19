@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@repo/ui/components/ui/table";
 import { useAtomValue } from "jotai";
-import { ArrowLeft, Ban, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Ban, Loader2, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -103,6 +103,7 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
   }
 
   const canCancelSale = isAdmin && sale.status !== CANCELLED_STATUS;
+  const canEditSaleDetails = canEditSale && sale.status !== CANCELLED_STATUS;
 
   const handleConfirmPayment = async () => {
     if (!newPayment.accountDestination.trim()) {
@@ -155,6 +156,17 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
           </div>
           <div className="flex items-center gap-2">
             <SaleStatusBadge status={sale.status} />
+            {canEditSaleDetails ? (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href={`/sales/${sale.id}/edit`} />}
+              >
+                <Pencil className="size-4" />
+                Editar venta
+              </Button>
+            ) : null}
             {canCancelSale && !isCancelling ? (
               <Button variant="outline" size="sm" onClick={() => setIsCancelling(true)}>
                 <Ban className="size-4" />
@@ -351,6 +363,24 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {sale.edits.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Historial de ediciones</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {sale.edits.map((edit) => (
+              <div key={edit.id} className="flex flex-col gap-1 rounded-lg border border-border p-3">
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(edit.editedAt)} · {edit.editedByName || "—"}
+                </span>
+                <span className="text-sm text-foreground">{edit.notes}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

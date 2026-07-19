@@ -111,3 +111,22 @@ export const salePayments = pgTable(
 
 export type SalePayment = typeof salePayments.$inferSelect;
 export type NewSalePayment = typeof salePayments.$inferInsert;
+
+export const saleEdits = pgTable(
+  "sale_edits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    saleId: uuid("sale_id")
+      .notNull()
+      .references(() => sales.id, { onDelete: "cascade" }),
+    editedBy: uuid("edited_by")
+      .notNull()
+      .references(() => users.id),
+    editedAt: timestamp("edited_at", { withTimezone: true }).notNull().defaultNow(),
+    notes: text("notes").notNull(),
+  },
+  (table) => [index("sale_edits_sale_id_idx").on(table.saleId)],
+);
+
+export type SaleEdit = typeof saleEdits.$inferSelect;
+export type NewSaleEdit = typeof saleEdits.$inferInsert;

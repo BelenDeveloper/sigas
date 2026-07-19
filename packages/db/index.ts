@@ -93,10 +93,12 @@ export type {
 export { PURCHASE_CODE_SEQUENCE_NAME, PURCHASE_STATUSES } from "./schema/purchases.js";
 export type {
   NewSale,
+  NewSaleEdit,
   NewSaleItem,
   NewSalePayment,
   PaymentMethod,
   Sale,
+  SaleEdit,
   SaleItem,
   SalePayment,
   SaleStatus,
