@@ -10,7 +10,6 @@ import {
   ChecklistItemNotFoundError,
   InvalidStageTransitionError,
   LogisticsTaskNotFoundError,
-  PaymentAlreadyRecordedError,
   PrivateProjectAccessDeniedError,
   ProjectNotFoundError,
 } from "./projects.types.js";
@@ -83,10 +82,10 @@ const addExpenseInputSchema = z.object({
 
 const recordPaymentInputSchema = z.object({
   projectId: z.string().uuid(),
-  paymentNumber: z.number().int().min(1).max(2),
   amount: z.number().positive(),
   paymentMethod: z.enum(PAYMENT_METHODS),
   accountDestination: z.string().min(1),
+  receiptUrl: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -119,8 +118,7 @@ function toTrpcError(error: unknown): TRPCError {
 
   if (
     error instanceof InvalidStageTransitionError ||
-    error instanceof CancellationReasonRequiredError ||
-    error instanceof PaymentAlreadyRecordedError
+    error instanceof CancellationReasonRequiredError
   ) {
     return new TRPCError({ code: "BAD_REQUEST", message: error.message });
   }

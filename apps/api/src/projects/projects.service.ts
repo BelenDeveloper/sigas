@@ -9,7 +9,6 @@ import {
   ChecklistItemNotFoundError,
   InvalidStageTransitionError,
   LogisticsTaskNotFoundError,
-  PaymentAlreadyRecordedError,
   PrivateProjectAccessDeniedError,
   ProjectNotFoundError,
   type AddExpenseInput,
@@ -334,29 +333,17 @@ export class ProjectsService {
     input: RecordPaymentInput,
     userId: string,
   ): Promise<ProjectPaymentReceived> {
-    const [existingPayment] = await db
-      .select()
-      .from(schema.projectPaymentsReceived)
-      .where(
-        and(
-          eq(schema.projectPaymentsReceived.projectId, projectId),
-          eq(schema.projectPaymentsReceived.paymentNumber, input.paymentNumber),
-        ),
-      )
-      .limit(1);
-
-    if (existingPayment) {
-      throw new PaymentAlreadyRecordedError(projectId, input.paymentNumber);
-    }
+    const nextPaymentNumber = await this.getNextPaymentNumber(projectId);
 
     const [payment] = await db
       .insert(schema.projectPaymentsReceived)
       .values({
         projectId,
-        paymentNumber: input.paymentNumber,
+        paymentNumber: nextPaymentNumber,
         amount: input.amount.toString(),
         paymentMethod: input.paymentMethod,
         accountDestination: input.accountDestination,
+        receiptUrl: input.receiptUrl,
         notes: input.notes,
         createdBy: userId,
       })
@@ -369,7 +356,7 @@ export class ProjectsService {
     await this.cashService.createAutomaticEntry({
       type: "income",
       category: "collection",
-      description: `Project payment #${input.paymentNumber}`,
+      description: `Project payment #${nextPaymentNumber}`,
       paymentMethod: input.paymentMethod,
       accountDestination: input.accountDestination,
       amount: input.amount,
@@ -379,6 +366,15 @@ export class ProjectsService {
     });
 
     return payment;
+  }
+
+  private async getNextPaymentNumber(projectId: string): Promise<number> {
+    const [result] = await db
+      .select({ maxPaymentNumber: sql<number | null>`max(${schema.projectPaymentsReceived.paymentNumber})` })
+      .from(schema.projectPaymentsReceived)
+      .where(eq(schema.projectPaymentsReceived.projectId, projectId));
+
+    return (result?.maxPaymentNumber ?? 0) + 1;
   }
 
   async updateChecklist(

@@ -54,13 +54,12 @@ export interface DocumentInput {
   fileType?: string;
 }
 
-export type PaymentInstallment = "first" | "second";
-
 export interface PaymentInput {
   amountBOB: number;
   date: string;
   method: PaymentMethod;
   accountDestination: string;
+  receiptUrl?: string;
 }
 
 export interface ProjectListItem {
@@ -77,10 +76,13 @@ export interface ProjectListItem {
 }
 
 export interface RecordedPayment {
+  id: string;
+  paymentNumber: number;
   amountBOB: number;
   date: string;
   method: PaymentMethod;
   accountDestination: string;
+  receiptUrl: string;
 }
 
 export interface ProjectTask {
@@ -134,8 +136,7 @@ export interface ProjectDetail {
   totalValueBOB: number;
   firstPaymentAmountBOB: number;
   secondPaymentAmountBOB: number;
-  firstPaymentReceived: RecordedPayment | null;
-  secondPaymentReceived: RecordedPayment | null;
+  paymentsReceived: RecordedPayment[];
   startDate: string;
   tasks: ProjectTask[];
   expenses: ProjectExpense[];
@@ -240,7 +241,7 @@ interface UseProjectResult {
   toggleTaskCompleted: (taskId: string) => Promise<void>;
   addExpense: (input: ExpenseInput) => Promise<void>;
   addDocument: (input: DocumentInput) => Promise<void>;
-  recordPayment: (installment: PaymentInstallment, input: PaymentInput) => Promise<void>;
+  recordPayment: (input: PaymentInput) => Promise<void>;
   toggleApprovalStep: (checklistItemId: string, nextIsCompleted: boolean) => Promise<void>;
   getUploadUrl: GetProjectUploadUrl;
   isChangingStage: boolean;
@@ -275,19 +276,22 @@ export function useProject(projectId: string): UseProjectResult {
       return undefined;
     }
 
-    const firstPayment = rawProject.paymentsReceived.find((payment) => payment.paymentNumber === 1);
-    const secondPayment = rawProject.paymentsReceived.find((payment) => payment.paymentNumber === 2);
-
     const toRecordedPayment = (payment: {
+      id: string;
+      paymentNumber: number;
       amount: string;
       paidAt: Date | string;
       paymentMethod: PaymentMethod;
       accountDestination: string | null;
+      receiptUrl: string | null;
     }): RecordedPayment => ({
+      id: payment.id,
+      paymentNumber: payment.paymentNumber,
       amountBOB: Number(payment.amount),
       date: String(payment.paidAt),
       method: payment.paymentMethod,
       accountDestination: payment.accountDestination ?? "",
+      receiptUrl: payment.receiptUrl ?? "",
     });
 
     return {
@@ -306,8 +310,10 @@ export function useProject(projectId: string): UseProjectResult {
       totalValueBOB: rawProject.totalValue ? Number(rawProject.totalValue) : 0,
       firstPaymentAmountBOB: rawProject.firstPaymentAmount ? Number(rawProject.firstPaymentAmount) : 0,
       secondPaymentAmountBOB: rawProject.secondPaymentAmount ? Number(rawProject.secondPaymentAmount) : 0,
-      firstPaymentReceived: firstPayment ? toRecordedPayment(firstPayment) : null,
-      secondPaymentReceived: secondPayment ? toRecordedPayment(secondPayment) : null,
+      paymentsReceived: rawProject.paymentsReceived
+        .slice()
+        .sort((a, b) => a.paymentNumber - b.paymentNumber)
+        .map(toRecordedPayment),
       startDate: rawProject.startDate ?? "",
       tasks: rawProject.logisticsTasks.map((task) => ({
         id: task.id,
@@ -384,13 +390,13 @@ export function useProject(projectId: string): UseProjectResult {
     });
   };
 
-  const recordPayment = async (installment: PaymentInstallment, input: PaymentInput) => {
+  const recordPayment = async (input: PaymentInput) => {
     await recordPaymentMutation.mutateAsync({
       projectId,
-      paymentNumber: installment === "first" ? 1 : 2,
       amount: input.amountBOB,
       paymentMethod: input.method,
       accountDestination: input.accountDestination,
+      receiptUrl: input.receiptUrl || undefined,
     });
   };
 

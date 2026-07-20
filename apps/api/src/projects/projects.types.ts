@@ -118,10 +118,10 @@ export interface AddExpenseInput {
 }
 
 export interface RecordPaymentInput {
-  paymentNumber: number;
   amount: number;
   paymentMethod: PaymentMethod;
   accountDestination: string;
+  receiptUrl?: string;
   notes?: string;
 }
 
@@ -184,9 +184,3 @@ export class ChecklistItemNotFoundError extends Error {
   }
 }
 
-export class PaymentAlreadyRecordedError extends Error {
-  constructor(projectId: string, paymentNumber: number) {
-    super(`Payment number ${paymentNumber} was already recorded for project: ${projectId}`);
-    this.name = "PaymentAlreadyRecordedError";
-  }
-}

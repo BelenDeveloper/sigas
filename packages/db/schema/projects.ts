@@ -187,16 +187,14 @@ export const projectPaymentsReceived = pgTable(
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     paymentMethod: text("payment_method", { enum: PAYMENT_METHODS }).notNull(),
     accountDestination: text("account_destination"),
+    receiptUrl: text("receipt_url"),
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
     notes: text("notes"),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
   },
-  (table) => [
-    index("project_payments_received_project_id_idx").on(table.projectId),
-    unique().on(table.projectId, table.paymentNumber),
-  ],
+  (table) => [index("project_payments_received_project_id_idx").on(table.projectId)],
 );
 
 export type ProjectPaymentReceived = typeof projectPaymentsReceived.$inferSelect;

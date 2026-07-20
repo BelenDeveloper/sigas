@@ -1,0 +1,2 @@
+ALTER TABLE "project_payments_received" DROP CONSTRAINT "project_payments_received_project_id_payment_number_unique";--> statement-breakpoint
+ALTER TABLE "project_payments_received" ADD COLUMN "receipt_url" text;

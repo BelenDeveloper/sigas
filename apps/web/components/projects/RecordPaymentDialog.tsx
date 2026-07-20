@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import type { PaymentInput, PaymentInstallment } from "@/hooks/use-projects";
+import type { PaymentInput } from "@/hooks/use-projects";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method";
 
 const AMOUNT_POSITIVE_MESSAGE = "El monto debe ser mayor a cero.";
@@ -53,21 +53,20 @@ function buildEmptyValues(): PaymentFormInput {
 }
 
 interface RecordPaymentDialogProps {
-  installment: PaymentInstallment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isRecordingPayment: boolean;
-  onConfirm: (installment: PaymentInstallment, payment: PaymentInput) => Promise<void>;
+  onConfirm: (payment: PaymentInput) => Promise<void>;
 }
 
 export function RecordPaymentDialog({
-  installment,
   open,
   onOpenChange,
   isRecordingPayment,
   onConfirm,
 }: RecordPaymentDialogProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const {
     register,
@@ -84,23 +83,24 @@ export function RecordPaymentDialog({
   useEffect(() => {
     if (open) {
       reset(buildEmptyValues());
+      setReceiptFile(null);
       setErrorMessage(null);
     }
-  }, [open, installment, reset]);
+  }, [open, reset]);
 
   const method = watch("method");
 
-  if (!installment) {
-    return null;
-  }
-
-  const installmentLabel = installment === "first" ? "Cuota 1" : "Cuota 2";
+  const handleReceiptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setReceiptFile(event.target.files?.[0] ?? null);
+  };
 
   const onSubmit = async (values: PaymentFormValues) => {
     setErrorMessage(null);
 
     try {
-      await onConfirm(installment, values);
+      // Stub: stores only the filename. Once Supabase Storage is wired for payment
+      // receipts, replace with uploadProjectFile (same pattern as project documents).
+      await onConfirm({ ...values, receiptUrl: receiptFile?.name });
       onOpenChange(false);
     } catch {
       setErrorMessage(SAVE_ERROR_MESSAGE);
@@ -111,7 +111,7 @@ export function RecordPaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar pago — {installmentLabel}</DialogTitle>
+          <DialogTitle>Registrar pago</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -155,6 +155,17 @@ export function RecordPaymentDialog({
             <Label htmlFor="record-payment-date">Fecha</Label>
             <Input id="record-payment-date" type="date" {...register("date")} />
             {errors.date ? <p className="text-sm text-destructive">{errors.date.message}</p> : null}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="record-payment-receipt">Comprobante (opcional)</Label>
+            <Input
+              id="record-payment-receipt"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleReceiptChange}
+            />
           </div>
 
           {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}

@@ -2,11 +2,8 @@ import type { ProjectDetail } from "@/hooks/use-projects";
 
 type Project = ProjectDetail;
 
-export function getProjectCollectedBOB(project: Pick<Project, "firstPaymentReceived" | "secondPaymentReceived">): number {
-  const firstAmountBOB = project.firstPaymentReceived?.amountBOB ?? 0;
-  const secondAmountBOB = project.secondPaymentReceived?.amountBOB ?? 0;
-
-  return firstAmountBOB + secondAmountBOB;
+export function getProjectCollectedBOB(project: Pick<Project, "paymentsReceived">): number {
+  return project.paymentsReceived.reduce((sum, payment) => sum + payment.amountBOB, 0);
 }
 
 export function getProjectTotalExpensesBOB(project: Pick<Project, "expenses">): number {
@@ -14,7 +11,7 @@ export function getProjectTotalExpensesBOB(project: Pick<Project, "expenses">): 
 }
 
 export function getProjectGrossMarginBOB(
-  project: Pick<Project, "firstPaymentReceived" | "secondPaymentReceived" | "expenses">,
+  project: Pick<Project, "paymentsReceived" | "expenses">,
 ): number {
   return getProjectCollectedBOB(project) - getProjectTotalExpensesBOB(project);
 }
