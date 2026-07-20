@@ -6,7 +6,6 @@ import { useAtomValue } from "jotai";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import { useClients } from "@/hooks/use-clients";
 import { useCompanies } from "@/hooks/use-companies";
 import { useProjects } from "@/hooks/use-projects";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
@@ -27,7 +26,6 @@ export function ProjectsPage() {
 
   const { projects, filters, setFilters, createProject, isLoading, isCreating } = useProjects();
   const { companies } = useCompanies();
-  const { clients } = useClients();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -70,7 +68,6 @@ export function ProjectsPage() {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         companies={companies}
-        clients={clients}
         isCreating={isCreating}
         onCreate={createProject}
       />

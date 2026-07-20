@@ -1,6 +1,5 @@
 import { boolean, date, index, integer, numeric, pgSequence, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
-import { clients } from "./clients.js";
 import { companies } from "./companies.js";
 import { PAYMENT_METHODS } from "./sales.js";
 import { users } from "./users.js";
@@ -45,7 +44,9 @@ export const projects = pgTable(
     name: text("name").notNull(),
     category: text("category", { enum: PROJECT_CATEGORIES }).notNull(),
     companyId: uuid("company_id").references(() => companies.id),
-    clientId: uuid("client_id").references(() => clients.id),
+    clientName: text("client_name"),
+    clientPhone: text("client_phone"),
+    clientAddress: text("client_address"),
     isPrivate: boolean("is_private").notNull().default(false),
     stage: text("stage", { enum: PROJECT_STAGES }).notNull().default("quotation"),
     description: text("description"),
@@ -66,7 +67,6 @@ export const projects = pgTable(
   },
   (table) => [
     index("projects_company_id_idx").on(table.companyId),
-    index("projects_client_id_idx").on(table.clientId),
     index("projects_stage_idx").on(table.stage),
     index("projects_category_idx").on(table.category),
   ],

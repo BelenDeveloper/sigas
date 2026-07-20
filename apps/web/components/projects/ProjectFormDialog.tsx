@@ -26,17 +26,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { ProjectInput } from "@/hooks/use-projects";
-import type { Client } from "@/lib/client-types";
 import type { Company } from "@/lib/company-types";
 import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS, type ProjectCategory } from "@/lib/project-types";
 
 const NAME_REQUIRED_MESSAGE = "El nombre del proyecto es obligatorio.";
 const COMPANY_REQUIRED_MESSAGE = "Selecciona una empresa.";
-const CLIENT_REQUIRED_MESSAGE = "Selecciona un cliente.";
+const CLIENT_NAME_REQUIRED_MESSAGE = "El nombre del cliente es obligatorio.";
 const START_DATE_REQUIRED_MESSAGE = "La fecha de inicio es obligatoria.";
 const TOTAL_VALUE_POSITIVE_MESSAGE = "El valor total debe ser mayor a cero.";
 const SELECT_COMPANY_PLACEHOLDER = "Selecciona una empresa";
-const SELECT_CLIENT_PLACEHOLDER = "Selecciona un cliente";
 const SAVE_ERROR_MESSAGE = "No se pudo crear el proyecto. Intenta nuevamente.";
 
 const DEFAULT_CATEGORY: ProjectCategory = "domestic";
@@ -45,7 +43,9 @@ const projectFormSchema = z.object({
   name: z.string().min(1, NAME_REQUIRED_MESSAGE),
   category: z.enum(["domestic", "commercial", "industrial"]),
   companyId: z.string().min(1, COMPANY_REQUIRED_MESSAGE),
-  clientId: z.string().min(1, CLIENT_REQUIRED_MESSAGE),
+  clientName: z.string().min(1, CLIENT_NAME_REQUIRED_MESSAGE),
+  clientPhone: z.string(),
+  clientAddress: z.string(),
   isPrivate: z.boolean(),
   totalValueBOB: z.coerce.number().positive(TOTAL_VALUE_POSITIVE_MESSAGE),
   firstPaymentAmountBOB: z.coerce.number().min(0),
@@ -61,7 +61,9 @@ const EMPTY_VALUES: ProjectFormInput = {
   name: "",
   category: DEFAULT_CATEGORY,
   companyId: "",
-  clientId: "",
+  clientName: "",
+  clientPhone: "",
+  clientAddress: "",
   isPrivate: false,
   totalValueBOB: 0,
   firstPaymentAmountBOB: 0,
@@ -74,7 +76,6 @@ interface ProjectFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   companies: Company[];
-  clients: Client[];
   isCreating: boolean;
   onCreate: (input: ProjectInput) => Promise<{ id: string }>;
 }
@@ -83,7 +84,6 @@ export function ProjectFormDialog({
   open,
   onOpenChange,
   companies,
-  clients,
   isCreating,
   onCreate,
 }: ProjectFormDialogProps) {
@@ -110,10 +110,8 @@ export function ProjectFormDialog({
 
   const category = watch("category");
   const companyId = watch("companyId");
-  const clientId = watch("clientId");
   const isPrivate = watch("isPrivate");
   const selectedCompany = companies.find((company) => company.id === companyId);
-  const selectedClient = clients.find((client) => client.id === clientId);
 
   const onSubmit = async (values: ProjectFormValues) => {
     setErrorMessage(null);
@@ -181,24 +179,25 @@ export function ProjectFormDialog({
                 <p className="text-sm text-destructive">{errors.companyId.message}</p>
               ) : null}
             </div>
+          </div>
 
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label htmlFor="project-form-client">Cliente</Label>
-              <Select modal={false} value={clientId} onValueChange={(value) => setValue("clientId", value ?? "")}>
-                <SelectTrigger id="project-form-client">
-                  <SelectValue>{() => selectedClient?.name ?? SELECT_CLIENT_PLACEHOLDER}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.clientId ? (
-                <p className="text-sm text-destructive">{errors.clientId.message}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-form-client-name">Nombre del cliente</Label>
+              <Input id="project-form-client-name" {...register("clientName")} />
+              {errors.clientName ? (
+                <p className="text-sm text-destructive">{errors.clientName.message}</p>
               ) : null}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-form-client-phone">Teléfono del cliente</Label>
+              <Input id="project-form-client-phone" {...register("clientPhone")} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="project-form-client-address">Dirección del cliente</Label>
+              <Input id="project-form-client-address" {...register("clientAddress")} />
             </div>
           </div>
 

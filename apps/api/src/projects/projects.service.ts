@@ -84,11 +84,9 @@ export class ProjectsService {
       .select({
         ...getTableColumns(schema.projects),
         companyName: schema.companies.name,
-        clientName: schema.clients.name,
       })
       .from(schema.projects)
       .leftJoin(schema.companies, eq(schema.projects.companyId, schema.companies.id))
-      .leftJoin(schema.clients, eq(schema.projects.clientId, schema.clients.id))
       .orderBy(desc(schema.projects.createdAt));
 
     return conditions.length > 0 ? query.where(and(...conditions)) : query;
@@ -119,7 +117,9 @@ export class ProjectsService {
           name: input.name,
           category: input.category,
           companyId: input.companyId,
-          clientId: input.clientId,
+          clientName: input.clientName,
+          clientPhone: input.clientPhone,
+          clientAddress: input.clientAddress,
           isPrivate: input.isPrivate ?? false,
           description: input.description,
           totalValue: input.totalValue?.toString(),
@@ -165,7 +165,9 @@ export class ProjectsService {
         name: input.name,
         category: input.category,
         companyId: input.companyId,
-        clientId: input.clientId,
+        clientName: input.clientName,
+        clientPhone: input.clientPhone,
+        clientAddress: input.clientAddress,
         isPrivate: input.isPrivate,
         description: input.description,
         totalValue: input.totalValue?.toString(),
@@ -443,10 +445,6 @@ export class ProjectsService {
       ? await db.select().from(schema.companies).where(eq(schema.companies.id, project.companyId)).limit(1)
       : [];
 
-    const [clientRow] = project.clientId
-      ? await db.select().from(schema.clients).where(eq(schema.clients.id, project.clientId)).limit(1)
-      : [];
-
     const [logistics] = await db
       .select()
       .from(schema.projectLogistics)
@@ -475,7 +473,6 @@ export class ProjectsService {
     return {
       ...project,
       companyName: companyRow?.name ?? null,
-      clientName: clientRow?.name ?? null,
       logistics: logistics ?? null,
       logisticsTasks,
       documents,

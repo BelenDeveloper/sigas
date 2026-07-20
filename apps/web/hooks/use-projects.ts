@@ -22,7 +22,9 @@ export interface ProjectInput {
   name: string;
   category: ProjectCategory;
   companyId: string;
-  clientId: string;
+  clientName: string;
+  clientPhone: string;
+  clientAddress: string;
   isPrivate: boolean;
   totalValueBOB: number;
   firstPaymentAmountBOB: number;
@@ -68,7 +70,6 @@ export interface ProjectListItem {
   category: ProjectCategory;
   companyId: string | null;
   companyName: string;
-  clientId: string | null;
   clientName: string;
   isPrivate: boolean;
   stage: ProjectStageKey;
@@ -124,8 +125,9 @@ export interface ProjectDetail {
   category: ProjectCategory;
   companyId: string | null;
   companyName: string;
-  clientId: string | null;
   clientName: string;
+  clientPhone: string;
+  clientAddress: string;
   isPrivate: boolean;
   stage: ProjectStageKey;
   description: string;
@@ -154,7 +156,6 @@ function toProjectListItem(project: {
   category: ProjectCategory;
   companyId: string | null;
   companyName: string | null;
-  clientId: string | null;
   clientName: string | null;
   isPrivate: boolean;
   stage: ProjectStageKey;
@@ -167,7 +168,6 @@ function toProjectListItem(project: {
     category: project.category,
     companyId: project.companyId,
     companyName: project.companyName ?? "",
-    clientId: project.clientId,
     clientName: project.clientName ?? "",
     isPrivate: project.isPrivate,
     stage: project.stage,
@@ -210,7 +210,9 @@ export function useProjects(): UseProjectsResult {
       name: input.name,
       category: input.category,
       companyId: input.companyId || undefined,
-      clientId: input.clientId || undefined,
+      clientName: input.clientName,
+      clientPhone: input.clientPhone || undefined,
+      clientAddress: input.clientAddress || undefined,
       isPrivate: input.isPrivate,
       totalValue: input.totalValueBOB || undefined,
       firstPaymentAmount: input.firstPaymentAmountBOB || undefined,
@@ -295,8 +297,9 @@ export function useProject(projectId: string): UseProjectResult {
       category: rawProject.category,
       companyId: rawProject.companyId,
       companyName: rawProject.companyName ?? "",
-      clientId: rawProject.clientId,
       clientName: rawProject.clientName ?? "",
+      clientPhone: rawProject.clientPhone ?? "",
+      clientAddress: rawProject.clientAddress ?? "",
       isPrivate: rawProject.isPrivate,
       stage: rawProject.stage,
       description: rawProject.description ?? "",

@@ -25,12 +25,10 @@ export type {
 
 export interface ProjectListItem extends Project {
   companyName: string | null;
-  clientName: string | null;
 }
 
 export interface ProjectDetail extends Project {
   companyName: string | null;
-  clientName: string | null;
   logistics: ProjectLogistics | null;
   logisticsTasks: ProjectLogisticsTask[];
   documents: ProjectDocument[];
@@ -58,7 +56,9 @@ export interface CreateProjectInput {
   name: string;
   category: ProjectCategory;
   companyId?: string;
-  clientId?: string;
+  clientName: string;
+  clientPhone?: string;
+  clientAddress?: string;
   isPrivate?: boolean;
   description?: string;
   totalValue?: number;
@@ -74,7 +74,9 @@ export interface UpdateProjectInput {
   name: string;
   category: ProjectCategory;
   companyId?: string;
-  clientId?: string;
+  clientName: string;
+  clientPhone?: string;
+  clientAddress?: string;
   isPrivate: boolean;
   description?: string;
   totalValue?: number;
