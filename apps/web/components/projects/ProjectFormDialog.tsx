@@ -78,6 +78,7 @@ interface ProjectFormDialogProps {
   companies: Company[];
   isCreating: boolean;
   onCreate: (input: ProjectInput) => Promise<{ id: string }>;
+  onAttachQuote: (projectId: string, fileName: string) => Promise<void>;
 }
 
 export function ProjectFormDialog({
@@ -86,8 +87,10 @@ export function ProjectFormDialog({
   companies,
   isCreating,
   onCreate,
+  onAttachQuote,
 }: ProjectFormDialogProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [quoteFile, setQuoteFile] = useState<File | null>(null);
 
   const {
     register,
@@ -104,6 +107,7 @@ export function ProjectFormDialog({
   useEffect(() => {
     if (open) {
       reset(EMPTY_VALUES);
+      setQuoteFile(null);
       setErrorMessage(null);
     }
   }, [open, reset]);
@@ -113,11 +117,22 @@ export function ProjectFormDialog({
   const isPrivate = watch("isPrivate");
   const selectedCompany = companies.find((company) => company.id === companyId);
 
+  const handleQuoteFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setQuoteFile(event.target.files?.[0] ?? null);
+  };
+
   const onSubmit = async (values: ProjectFormValues) => {
     setErrorMessage(null);
 
     try {
-      await onCreate(values);
+      const { id } = await onCreate(values);
+
+      if (quoteFile) {
+        // Best-effort: the project was already created successfully, so a failure
+        // attaching the quote shouldn't be reported as a project-creation error.
+        await onAttachQuote(id, quoteFile.name).catch(() => undefined);
+      }
+
       onOpenChange(false);
     } catch {
       setErrorMessage(SAVE_ERROR_MESSAGE);
@@ -251,6 +266,16 @@ export function ProjectFormDialog({
           <div className="flex flex-col gap-2">
             <Label htmlFor="project-form-description">Descripción</Label>
             <Textarea id="project-form-description" rows={3} {...register("description")} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="project-form-quote">Adjuntar cotización (opcional)</Label>
+            <Input
+              id="project-form-quote"
+              type="file"
+              accept="application/pdf,image/*"
+              onChange={handleQuoteFileChange}
+            />
           </div>
 
           {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}

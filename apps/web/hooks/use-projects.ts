@@ -181,6 +181,7 @@ interface UseProjectsResult {
   filters: ProjectFilterState;
   setFilters: (filters: Partial<ProjectFilterState>) => void;
   createProject: (input: ProjectInput) => Promise<{ id: string }>;
+  attachQuoteDocument: (projectId: string, fileName: string) => Promise<void>;
   isLoading: boolean;
   isCreating: boolean;
 }
@@ -203,6 +204,7 @@ export function useProjects(): UseProjectsResult {
   const invalidateProjects = () => void utils.projects.list.invalidate();
 
   const createMutation = trpc.projects.create.useMutation({ onSuccess: invalidateProjects });
+  const uploadDocumentMutation = trpc.projects.uploadDocument.useMutation();
 
   const projects = useMemo(() => (rawProjects ?? []).map(toProjectListItem), [rawProjects]);
 
@@ -223,11 +225,23 @@ export function useProjects(): UseProjectsResult {
     });
   };
 
+  const attachQuoteDocument = async (projectId: string, fileName: string): Promise<void> => {
+    // Stub: stores only the filename. Once Supabase Storage is wired for this flow,
+    // upload to project-files/{projectId}/quotation/{filename} and store that path instead.
+    await uploadDocumentMutation.mutateAsync({
+      projectId,
+      stage: "quotation",
+      name: "Cotización",
+      fileUrl: fileName,
+    });
+  };
+
   return {
     projects,
     filters,
     setFilters,
     createProject,
+    attachQuoteDocument,
     isLoading: rawProjects === undefined,
     isCreating: createMutation.isPending,
   };

@@ -193,7 +193,13 @@ export function AddExpenseDialog({
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="expense-form-receipt">Comprobante (opcional)</Label>
-            <Input id="expense-form-receipt" type="file" onChange={handleReceiptChange} />
+            <Input
+              id="expense-form-receipt"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleReceiptChange}
+            />
           </div>
 
           {uploadError ? <p className="text-sm text-destructive">{uploadError}</p> : null}

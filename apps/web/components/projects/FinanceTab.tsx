@@ -6,17 +6,12 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import type { ExpenseInput, PaymentInput, ProjectDetail } from "@/hooks/use-projects";
-import { formatCurrencyBOB } from "@/lib/format-currency";
 import type { GetProjectUploadUrl } from "@/lib/project-file-upload";
-import {
-  getProjectCollectedBOB,
-  getProjectGrossMarginBOB,
-  getProjectTotalExpensesBOB,
-} from "@/lib/project-finance-helpers";
 
 import { AddExpenseDialog } from "./AddExpenseDialog";
 import { PaymentInstallmentList } from "./PaymentInstallmentList";
 import { ProjectExpenseList } from "./ProjectExpenseList";
+import { ProjectFinanceSummary } from "./ProjectFinanceSummary";
 import { RecordPaymentDialog } from "./RecordPaymentDialog";
 
 interface FinanceTabProps {
@@ -39,46 +34,9 @@ export function FinanceTab({
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
 
-  const collectedBOB = getProjectCollectedBOB(project);
-  const totalExpensesBOB = getProjectTotalExpensesBOB(project);
-  const grossMarginBOB = getProjectGrossMarginBOB(project);
-
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Valor total</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold text-foreground">
-            {formatCurrencyBOB(project.totalValueBOB)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Cobrado</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold text-foreground">
-            {formatCurrencyBOB(collectedBOB)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Gastos totales</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold text-foreground">
-            {formatCurrencyBOB(totalExpensesBOB)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Margen bruto</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold text-foreground">
-            {formatCurrencyBOB(grossMarginBOB)}
-          </CardContent>
-        </Card>
-      </div>
+      <ProjectFinanceSummary project={project} />
 
       <Card>
         <CardHeader>
@@ -92,6 +50,8 @@ export function FinanceTab({
           />
         </CardContent>
       </Card>
+
+      <div className="border-t border-border" />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
