@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import type { ChecklistChannel } from "@/lib/checklist-channel";
 import { INITIAL_STAGE_KEY, type ProjectStageKey } from "@/lib/constants/project-stages";
 import type { PaymentMethod } from "@/lib/payment-method";
 import type { GetProjectUploadUrl } from "@/lib/project-file-upload";
@@ -114,10 +115,15 @@ export interface ProjectDocument {
 
 export interface ProjectApprovalStep {
   id: string;
-  stepNumber: number;
+  sortOrder: number;
   description: string;
   channel: string | null;
   isCompleted: boolean;
+}
+
+export interface ChecklistItemInput {
+  description: string;
+  channel?: ChecklistChannel;
 }
 
 export interface ProjectDetail {
@@ -257,6 +263,10 @@ interface UseProjectResult {
   addDocument: (input: DocumentInput) => Promise<void>;
   recordPayment: (input: PaymentInput) => Promise<void>;
   toggleApprovalStep: (checklistItemId: string, nextIsCompleted: boolean) => Promise<void>;
+  editApprovalStepDescription: (checklistItemId: string, description: string) => Promise<void>;
+  addChecklistItem: (input: ChecklistItemInput) => Promise<void>;
+  removeChecklistItem: (checklistItemId: string) => Promise<void>;
+  reorderChecklistItems: (orderedIds: string[]) => Promise<void>;
   getUploadUrl: GetProjectUploadUrl;
   isChangingStage: boolean;
   isAddingTask: boolean;
@@ -264,6 +274,8 @@ interface UseProjectResult {
   isAddingExpense: boolean;
   isRecordingPayment: boolean;
   togglingChecklistItemId: string | null;
+  isAddingChecklistItem: boolean;
+  removingChecklistItemId: string | null;
 }
 
 export function useProject(projectId: string): UseProjectResult {
@@ -283,6 +295,11 @@ export function useProject(projectId: string): UseProjectResult {
   const uploadDocumentMutation = trpc.projects.uploadDocument.useMutation({ onSuccess: invalidateProject });
   const recordPaymentMutation = trpc.projects.recordPayment.useMutation({ onSuccess: invalidateProject });
   const updateChecklistMutation = trpc.projects.updateChecklist.useMutation({ onSuccess: invalidateProject });
+  const addChecklistItemMutation = trpc.projects.addChecklistItem.useMutation({ onSuccess: invalidateProject });
+  const removeChecklistItemMutation = trpc.projects.removeChecklistItem.useMutation({
+    onSuccess: invalidateProject,
+  });
+  const reorderChecklistMutation = trpc.projects.reorderChecklist.useMutation({ onSuccess: invalidateProject });
   const getUploadUrlMutation = trpc.projects.getUploadUrl.useMutation();
 
   const project = useMemo<ProjectDetail | undefined>(() => {
@@ -353,16 +370,13 @@ export function useProject(projectId: string): UseProjectResult {
         uploadedBy: document.uploadedBy,
         uploadedAt: String(document.uploadedAt),
       })),
-      approvalChecklist: rawProject.checklist
-        .slice()
-        .sort((a, b) => a.stepNumber - b.stepNumber)
-        .map((item) => ({
-          id: item.id,
-          stepNumber: item.stepNumber,
-          description: item.stepDescription,
-          channel: item.channel,
-          isCompleted: item.isCompleted,
-        })),
+      approvalChecklist: rawProject.checklist.map((item) => ({
+        id: item.id,
+        sortOrder: item.sortOrder,
+        description: item.stepDescription,
+        channel: item.channel,
+        isCompleted: item.isCompleted,
+      })),
     };
   }, [rawProject]);
 
@@ -418,6 +432,26 @@ export function useProject(projectId: string): UseProjectResult {
     await updateChecklistMutation.mutateAsync({ id: checklistItemId, isCompleted: nextIsCompleted });
   };
 
+  const editApprovalStepDescription = async (checklistItemId: string, description: string) => {
+    await updateChecklistMutation.mutateAsync({ id: checklistItemId, stepDescription: description });
+  };
+
+  const addChecklistItem = async (input: ChecklistItemInput) => {
+    await addChecklistItemMutation.mutateAsync({
+      projectId,
+      stepDescription: input.description,
+      channel: input.channel,
+    });
+  };
+
+  const removeChecklistItem = async (checklistItemId: string) => {
+    await removeChecklistItemMutation.mutateAsync({ id: checklistItemId });
+  };
+
+  const reorderChecklistItems = async (orderedIds: string[]) => {
+    await reorderChecklistMutation.mutateAsync({ projectId, orderedIds });
+  };
+
   const getUploadUrl: GetProjectUploadUrl = (fileName, contentType) => {
     return getUploadUrlMutation.mutateAsync({ projectId, fileName, contentType });
   };
@@ -432,6 +466,10 @@ export function useProject(projectId: string): UseProjectResult {
     addDocument,
     recordPayment,
     toggleApprovalStep,
+    editApprovalStepDescription,
+    addChecklistItem,
+    removeChecklistItem,
+    reorderChecklistItems,
     getUploadUrl,
     isChangingStage: changeStageMutation.isPending,
     isAddingTask: addTaskMutation.isPending,
@@ -442,6 +480,10 @@ export function useProject(projectId: string): UseProjectResult {
     isRecordingPayment: recordPaymentMutation.isPending,
     togglingChecklistItemId: updateChecklistMutation.isPending
       ? (updateChecklistMutation.variables?.id ?? null)
+      : null,
+    isAddingChecklistItem: addChecklistItemMutation.isPending,
+    removingChecklistItemId: removeChecklistItemMutation.isPending
+      ? (removeChecklistItemMutation.variables?.id ?? null)
       : null,
   };
 }

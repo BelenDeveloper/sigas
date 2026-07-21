@@ -1,4 +1,4 @@
-import { boolean, date, index, integer, numeric, pgSequence, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, numeric, pgSequence, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { companies } from "./companies.js";
 import { PAYMENT_METHODS } from "./sales.js";
@@ -210,15 +210,13 @@ export const projectApprovalChecklist = pgTable(
     stepNumber: integer("step_number").notNull(),
     stepDescription: text("step_description").notNull(),
     channel: text("channel", { enum: CHECKLIST_CHANNELS }),
+    sortOrder: integer("sort_order").notNull().default(0),
     isCompleted: boolean("is_completed").notNull().default(false),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     completedBy: uuid("completed_by").references(() => users.id),
     notes: text("notes"),
   },
-  (table) => [
-    index("project_approval_checklist_project_id_idx").on(table.projectId),
-    unique().on(table.projectId, table.stepNumber),
-  ],
+  (table) => [index("project_approval_checklist_project_id_idx").on(table.projectId)],
 );
 
 export type ProjectApprovalChecklist = typeof projectApprovalChecklist.$inferSelect;

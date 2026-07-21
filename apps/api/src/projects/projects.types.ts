@@ -1,4 +1,5 @@
 import type {
+  ChecklistChannel,
   PaymentMethod,
   Project,
   ProjectApprovalChecklist,
@@ -126,8 +127,20 @@ export interface RecordPaymentInput {
 }
 
 export interface UpdateChecklistInput {
-  isCompleted: boolean;
+  isCompleted?: boolean;
+  stepDescription?: string;
   notes?: string;
+}
+
+export interface AddChecklistItemInput {
+  projectId: string;
+  stepDescription: string;
+  channel?: ChecklistChannel;
+}
+
+export interface ReorderChecklistInput {
+  projectId: string;
+  orderedIds: string[];
 }
 
 export interface GetUploadUrlInput {

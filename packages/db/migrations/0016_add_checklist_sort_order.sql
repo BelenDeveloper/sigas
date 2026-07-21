@@ -1,0 +1,2 @@
+ALTER TABLE "project_approval_checklist" DROP CONSTRAINT "project_approval_checklist_project_id_step_number_unique";--> statement-breakpoint
+ALTER TABLE "project_approval_checklist" ADD COLUMN "sort_order" integer DEFAULT 0 NOT NULL;

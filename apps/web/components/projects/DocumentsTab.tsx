@@ -5,16 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import type { DocumentInput, ProjectDetail } from "@/hooks/use-projects";
-import { getStageByKey } from "@/lib/constants/project-stages";
+import type { ChecklistItemInput, DocumentInput, ProjectDetail } from "@/hooks/use-projects";
 import type { GetProjectUploadUrl } from "@/lib/project-file-upload";
 import type { AdminUser } from "@/lib/user-permissions";
 
+import { AddChecklistItemDialog } from "./AddChecklistItemDialog";
 import { ApprovalChecklist } from "./ApprovalChecklist";
 import { DocumentGallery } from "./DocumentGallery";
 import { UploadDocumentDialog } from "./UploadDocumentDialog";
-
-const DESIGN_INSPECTION_STAGE_KEY = "design_inspection";
 
 interface DocumentsTabProps {
   project: ProjectDetail;
@@ -22,8 +20,14 @@ interface DocumentsTabProps {
   canEdit: boolean;
   getUploadUrl: GetProjectUploadUrl;
   togglingChecklistItemId: string | null;
+  removingChecklistItemId: string | null;
+  isAddingChecklistItem: boolean;
   onAddDocument: (input: DocumentInput) => Promise<void>;
   onToggleApprovalStep: (checklistItemId: string, nextIsCompleted: boolean) => void;
+  onEditApprovalStepDescription: (checklistItemId: string, description: string) => void;
+  onAddChecklistItem: (input: ChecklistItemInput) => Promise<void>;
+  onRemoveChecklistItem: (checklistItemId: string) => void;
+  onReorderChecklistItems: (orderedIds: string[]) => void;
 }
 
 export function DocumentsTab({
@@ -32,10 +36,17 @@ export function DocumentsTab({
   canEdit,
   getUploadUrl,
   togglingChecklistItemId,
+  removingChecklistItemId,
+  isAddingChecklistItem,
   onAddDocument,
   onToggleApprovalStep,
+  onEditApprovalStepDescription,
+  onAddChecklistItem,
+  onRemoveChecklistItem,
+  onReorderChecklistItems,
 }: DocumentsTabProps) {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isAddChecklistItemOpen, setIsAddChecklistItemOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,13 +63,18 @@ export function DocumentsTab({
 
       <Card>
         <CardHeader>
-          <CardTitle>{getStageByKey(DESIGN_INSPECTION_STAGE_KEY).label}</CardTitle>
+          <CardTitle>Checklist de aprobación</CardTitle>
         </CardHeader>
         <CardContent>
           <ApprovalChecklist
             steps={project.approvalChecklist}
             togglingChecklistItemId={togglingChecklistItemId}
+            removingChecklistItemId={removingChecklistItemId}
             onToggleStep={onToggleApprovalStep}
+            onEditDescription={onEditApprovalStepDescription}
+            onRemoveStep={onRemoveChecklistItem}
+            onReorderSteps={onReorderChecklistItems}
+            onAddStep={() => setIsAddChecklistItemOpen(true)}
           />
         </CardContent>
       </Card>
@@ -69,6 +85,13 @@ export function DocumentsTab({
         currentStage={project.stage}
         getUploadUrl={getUploadUrl}
         onCreate={onAddDocument}
+      />
+
+      <AddChecklistItemDialog
+        open={isAddChecklistItemOpen}
+        onOpenChange={setIsAddChecklistItemOpen}
+        isAdding={isAddingChecklistItem}
+        onCreate={onAddChecklistItem}
       />
     </div>
   );

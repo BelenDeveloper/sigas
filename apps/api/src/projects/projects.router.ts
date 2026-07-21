@@ -1,4 +1,4 @@
-import { PAYMENT_METHODS, PROJECT_CATEGORIES, PROJECT_STAGES } from "@repo/db";
+import { CHECKLIST_CHANNELS, PAYMENT_METHODS, PROJECT_CATEGORIES, PROJECT_STAGES } from "@repo/db";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -91,8 +91,22 @@ const recordPaymentInputSchema = z.object({
 
 const updateChecklistInputSchema = z.object({
   id: z.string().uuid(),
-  isCompleted: z.boolean(),
+  isCompleted: z.boolean().optional(),
+  stepDescription: z.string().min(1).optional(),
   notes: z.string().optional(),
+});
+
+const addChecklistItemInputSchema = z.object({
+  projectId: z.string().uuid(),
+  stepDescription: z.string().min(1),
+  channel: z.enum(CHECKLIST_CHANNELS).optional(),
+});
+
+const removeChecklistItemInputSchema = z.object({ id: z.string().uuid() });
+
+const reorderChecklistInputSchema = z.object({
+  projectId: z.string().uuid(),
+  orderedIds: z.array(z.string().uuid()).min(1),
 });
 
 const getSummaryInputSchema = z.object({ id: z.string().uuid() });
@@ -236,6 +250,28 @@ export const projectsRouter = router({
     } catch (error) {
       throw toTrpcError(error);
     }
+  }),
+
+  addChecklistItem: protectedProcedure.input(addChecklistItemInputSchema).mutation(({ ctx, input }) => {
+    requirePermission(ctx, PROJECTS_MODULE, "edit");
+    return projectsService.addChecklistItem(input);
+  }),
+
+  removeChecklistItem: protectedProcedure
+    .input(removeChecklistItemInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      requirePermission(ctx, PROJECTS_MODULE, "edit");
+
+      try {
+        return await projectsService.removeChecklistItem(input.id);
+      } catch (error) {
+        throw toTrpcError(error);
+      }
+    }),
+
+  reorderChecklist: protectedProcedure.input(reorderChecklistInputSchema).mutation(({ ctx, input }) => {
+    requirePermission(ctx, PROJECTS_MODULE, "edit");
+    return projectsService.reorderChecklist(input);
   }),
 
   getSummary: protectedProcedure.input(getSummaryInputSchema).query(async ({ ctx, input }) => {

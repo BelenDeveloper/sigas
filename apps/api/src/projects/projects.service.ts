@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { db, schema, PROJECT_STAGES, type ChecklistChannel, type Project, type ProjectStage } from "@repo/db";
-import { and, desc, eq, getTableColumns, or, sql } from "drizzle-orm";
+import { db, schema, PROJECT_STAGES, type Project, type ProjectStage } from "@repo/db";
+import { and, asc, desc, eq, getTableColumns, or, sql } from "drizzle-orm";
 
 import { CashService } from "../cash/cash.service.js";
 import { SupabaseAdminService } from "../supabase/supabase.service.js";
@@ -11,6 +11,7 @@ import {
   LogisticsTaskNotFoundError,
   PrivateProjectAccessDeniedError,
   ProjectNotFoundError,
+  type AddChecklistItemInput,
   type AddExpenseInput,
   type AddLogisticsTaskInput,
   type ChangeStageInput,
@@ -26,6 +27,7 @@ import {
   type ProjectPaymentReceived,
   type ProjectSummary,
   type RecordPaymentInput,
+  type ReorderChecklistInput,
   type SignedUploadUrl,
   type UpdateChecklistInput,
   type UpdateProjectInput,
@@ -38,16 +40,6 @@ const PROJECT_FILES_BUCKET = "project-files";
 const ADMIN_ROLE = "admin";
 const CASH_PAYMENT_METHOD = "cash";
 const DEFAULT_CASH_DESTINATION = "Efectivo caja";
-
-// The design_inspection approval workflow — matches the checklist already defined in the
-// frontend (apps/web/lib/constants/project-stages.ts, APPROVAL_CHECKLIST_STEPS).
-const DEFAULT_CHECKLIST_STEPS: { description: string; channel: ChecklistChannel }[] = [
-  { description: "Enviar KMZ a YPFB", channel: "correo" },
-  { description: "Recibir aprobación de diseño", channel: "correo" },
-  { description: "Firmar carta de inicio", channel: "ventanilla" },
-  { description: "Inspeccionar con el inspector municipal", channel: "inspector" },
-  { description: "Obtener el sello final", channel: "ventanilla" },
-];
 
 function todayISODate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -143,15 +135,6 @@ export class ProjectsService {
         stage: project.stage,
         changedBy: userId,
       });
-
-      await tx.insert(schema.projectApprovalChecklist).values(
-        DEFAULT_CHECKLIST_STEPS.map((step, index) => ({
-          projectId: project.id,
-          stepNumber: index + 1,
-          stepDescription: step.description,
-          channel: step.channel,
-        })),
-      );
 
       return project;
     });
@@ -386,8 +369,9 @@ export class ProjectsService {
       .update(schema.projectApprovalChecklist)
       .set({
         isCompleted: input.isCompleted,
-        completedAt: input.isCompleted ? new Date() : null,
-        completedBy: input.isCompleted ? userId : null,
+        completedAt: input.isCompleted === undefined ? undefined : input.isCompleted ? new Date() : null,
+        completedBy: input.isCompleted === undefined ? undefined : input.isCompleted ? userId : null,
+        stepDescription: input.stepDescription,
         notes: input.notes,
       })
       .where(eq(schema.projectApprovalChecklist.id, checklistItemId))
@@ -398,6 +382,63 @@ export class ProjectsService {
     }
 
     return item;
+  }
+
+  async addChecklistItem(input: AddChecklistItemInput): Promise<ProjectApprovalChecklist> {
+    const [existingCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.projectApprovalChecklist)
+      .where(eq(schema.projectApprovalChecklist.projectId, input.projectId));
+
+    const sortOrder = existingCount?.count ?? 0;
+
+    const [item] = await db
+      .insert(schema.projectApprovalChecklist)
+      .values({
+        projectId: input.projectId,
+        stepNumber: sortOrder + 1,
+        stepDescription: input.stepDescription,
+        channel: input.channel,
+        sortOrder,
+      })
+      .returning();
+
+    if (!item) {
+      throw new Error(`Failed to add checklist item for project: ${input.projectId}`);
+    }
+
+    return item;
+  }
+
+  async removeChecklistItem(checklistItemId: string): Promise<ProjectApprovalChecklist> {
+    const [item] = await db
+      .delete(schema.projectApprovalChecklist)
+      .where(eq(schema.projectApprovalChecklist.id, checklistItemId))
+      .returning();
+
+    if (!item) {
+      throw new ChecklistItemNotFoundError(checklistItemId);
+    }
+
+    return item;
+  }
+
+  async reorderChecklist(input: ReorderChecklistInput): Promise<void> {
+    await db.transaction(async (tx) => {
+      await Promise.all(
+        input.orderedIds.map((checklistItemId, index) =>
+          tx
+            .update(schema.projectApprovalChecklist)
+            .set({ sortOrder: index })
+            .where(
+              and(
+                eq(schema.projectApprovalChecklist.id, checklistItemId),
+                eq(schema.projectApprovalChecklist.projectId, input.projectId),
+              ),
+            ),
+        ),
+      );
+    });
   }
 
   async getProjectSummary(id: string): Promise<ProjectSummary> {
@@ -458,7 +499,8 @@ export class ProjectsService {
       db
         .select()
         .from(schema.projectApprovalChecklist)
-        .where(eq(schema.projectApprovalChecklist.projectId, project.id)),
+        .where(eq(schema.projectApprovalChecklist.projectId, project.id))
+        .orderBy(asc(schema.projectApprovalChecklist.sortOrder)),
       db
         .select()
         .from(schema.projectStageHistory)

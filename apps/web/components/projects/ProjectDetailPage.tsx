@@ -47,6 +47,10 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     addDocument,
     recordPayment,
     toggleApprovalStep,
+    editApprovalStepDescription,
+    addChecklistItem,
+    removeChecklistItem,
+    reorderChecklistItems,
     getUploadUrl,
     isChangingStage,
     isAddingTask,
@@ -54,6 +58,8 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     isAddingExpense,
     isRecordingPayment,
     togglingChecklistItemId,
+    isAddingChecklistItem,
+    removingChecklistItemId,
   } = useProject(projectId);
   const { users } = useUsers();
 
@@ -159,9 +165,21 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
             canEdit={canEditProject}
             getUploadUrl={getUploadUrl}
             togglingChecklistItemId={togglingChecklistItemId}
+            removingChecklistItemId={removingChecklistItemId}
+            isAddingChecklistItem={isAddingChecklistItem}
             onAddDocument={addDocument}
             onToggleApprovalStep={(checklistItemId, nextIsCompleted) => {
               toggleApprovalStep(checklistItemId, nextIsCompleted).catch(() => undefined);
+            }}
+            onEditApprovalStepDescription={(checklistItemId, description) => {
+              editApprovalStepDescription(checklistItemId, description).catch(() => undefined);
+            }}
+            onAddChecklistItem={addChecklistItem}
+            onRemoveChecklistItem={(checklistItemId) => {
+              removeChecklistItem(checklistItemId).catch(() => undefined);
+            }}
+            onReorderChecklistItems={(orderedIds) => {
+              reorderChecklistItems(orderedIds).catch(() => undefined);
             }}
           />
         </TabsContent>

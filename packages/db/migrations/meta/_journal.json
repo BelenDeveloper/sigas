@@ -113,6 +113,20 @@
       "when": 1784590700000,
       "tag": "0015_backfill_project_cash_context",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784597157713,
+      "tag": "0016_add_checklist_sort_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784597200000,
+      "tag": "0017_backfill_checklist_sort_order",
+      "breakpoints": true
     }
   ]
 }
