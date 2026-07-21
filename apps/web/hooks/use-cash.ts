@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import type { CashEntryCategory, CashEntryType, CreditorType, PayableStatus } from "@/lib/cash-types";
+import type { CashContext, CashEntryCategory, CashEntryType, CreditorType, PayableStatus } from "@/lib/cash-types";
 import type { PaymentMethod } from "@/lib/payment-method";
 import { trpc } from "@/lib/trpc/client";
 
@@ -76,6 +76,7 @@ export interface CashEntryView {
   accountDestination: string;
   amountBOB: number;
   isCancelled: boolean;
+  cashContext: CashContext;
 }
 
 export interface DestinationBalance {
@@ -144,6 +145,7 @@ function toEntry(entry: {
   accountDestination: string | null;
   amount: string;
   cancelled: boolean;
+  cashContext: string;
 }): CashEntryView {
   return {
     id: entry.id,
@@ -155,6 +157,7 @@ function toEntry(entry: {
     accountDestination: entry.accountDestination ?? "",
     amountBOB: Number(entry.amount),
     isCancelled: entry.cancelled,
+    cashContext: entry.cashContext as CashContext,
   };
 }
 
@@ -218,7 +221,7 @@ interface UseCashResult {
   isAddingPayablePayment: boolean;
 }
 
-export function useCash(): UseCashResult {
+export function useCash(cashContext: CashContext): UseCashResult {
   const utils = trpc.useUtils();
 
   const { data: rawSession } = trpc.cash.getCurrentSession.useQuery();
@@ -240,7 +243,7 @@ export function useCash(): UseCashResult {
     { enabled: session !== null },
   );
 
-  const { data: rawWhereIsTheMoney } = trpc.cash.getWhereIsTheMoney.useQuery({});
+  const { data: rawWhereIsTheMoney } = trpc.cash.getWhereIsTheMoney.useQuery({ cashContext });
   const { data: rawPayables } = trpc.cash.listPayables.useQuery({});
 
   const invalidateSession = () => void utils.cash.getCurrentSession.invalidate();
@@ -272,6 +275,10 @@ export function useCash(): UseCashResult {
   const entries = useMemo(
     () =>
       allEntries.filter((entry) => {
+        if (entry.cashContext !== cashContext) {
+          return false;
+        }
+
         if (entryFilters.type !== ALL_CASH_ENTRY_TYPES_OPTION && entry.type !== entryFilters.type) {
           return false;
         }
@@ -293,7 +300,7 @@ export function useCash(): UseCashResult {
 
         return true;
       }),
-    [allEntries, entryFilters],
+    [allEntries, entryFilters, cashContext],
   );
 
   const destinationBalances = useMemo<DestinationBalance[]>(

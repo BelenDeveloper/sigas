@@ -12,6 +12,7 @@ import type {
   DestinationBalance,
   PartnerDistributionInput,
 } from "@/hooks/use-cash";
+import type { CashContext } from "@/lib/cash-types";
 
 import { AddCashEntryDialog } from "./AddCashEntryDialog";
 import { CashEntryFilters } from "./CashEntryFilters";
@@ -21,6 +22,7 @@ import { PartnerDistributionDialog } from "./PartnerDistributionDialog";
 import { WhereIsTheMoneyCard } from "./WhereIsTheMoneyCard";
 
 interface CashTabProps {
+  cashContext: CashContext;
   session: CashSessionView | null;
   onOpenSession: () => Promise<void>;
   onCloseSession: (closingAmountBOB: number) => Promise<void>;
@@ -43,6 +45,7 @@ interface CashTabProps {
 }
 
 export function CashTab({
+  cashContext,
   session,
   onOpenSession,
   onCloseSession,
@@ -78,7 +81,11 @@ export function CashTab({
         isClosingSession={isClosingSession}
       />
 
-      <WhereIsTheMoneyCard destinationBalances={destinationBalances} totalBOB={totalCashBalanceBOB} />
+      <WhereIsTheMoneyCard
+        cashContext={cashContext}
+        destinationBalances={destinationBalances}
+        totalBOB={totalCashBalanceBOB}
+      />
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <CashEntryFilters filters={entryFilters} onFiltersChange={onEntryFiltersChange} />

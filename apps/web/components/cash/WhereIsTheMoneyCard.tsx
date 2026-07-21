@@ -1,18 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 
 import type { DestinationBalance } from "@/hooks/use-cash";
+import type { CashContext } from "@/lib/cash-types";
 import { formatCurrencyBOB } from "@/lib/format-currency";
 
+const CARD_TITLES: Record<CashContext, string> = {
+  sigas: "¿Dónde está el dinero?",
+  projects: "Fondos de proyectos por destino",
+};
+
 interface WhereIsTheMoneyCardProps {
+  cashContext: CashContext;
   destinationBalances: DestinationBalance[];
   totalBOB: number;
 }
 
-export function WhereIsTheMoneyCard({ destinationBalances, totalBOB }: WhereIsTheMoneyCardProps) {
+export function WhereIsTheMoneyCard({ cashContext, destinationBalances, totalBOB }: WhereIsTheMoneyCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>¿Dónde está el dinero?</CardTitle>
+        <CardTitle>{CARD_TITLES[cashContext]}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-4">

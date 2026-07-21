@@ -1,6 +1,7 @@
 export * from "./client.js";
 export * as schema from "./schema/index.js";
 export type {
+  CashContext,
   CashEntry,
   CashEntryReferenceType,
   CashEntryType,
@@ -20,6 +21,7 @@ export type {
   PayableStatus,
 } from "./schema/cash.js";
 export {
+  CASH_CONTEXTS,
   CASH_ENTRY_REFERENCE_TYPES,
   CASH_ENTRY_TYPES,
   CASH_EXPENSE_CATEGORIES,

@@ -1,4 +1,4 @@
-import { CASH_ENTRY_TYPES, CREDITOR_TYPES, PAYABLE_STATUSES, PAYMENT_METHODS } from "@repo/db";
+import { CASH_CONTEXTS, CASH_ENTRY_TYPES, CREDITOR_TYPES, PAYABLE_STATUSES, PAYMENT_METHODS } from "@repo/db";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -46,6 +46,7 @@ const whereIsTheMoneyInputSchema = z.object({
   sessionId: z.string().uuid().optional(),
   dateFrom: z.coerce.date().optional(),
   dateTo: z.coerce.date().optional(),
+  cashContext: z.enum(CASH_CONTEXTS).optional(),
 });
 
 const dailySummaryInputSchema = z.object({ sessionId: z.string().uuid() });

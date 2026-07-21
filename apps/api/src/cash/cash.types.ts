@@ -1,4 +1,5 @@
 import type {
+  CashContext,
   CashEntry,
   CashEntryReferenceType,
   CashEntryType,
@@ -59,6 +60,7 @@ export interface WhereIsTheMoneyFilters {
   sessionId?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  cashContext?: CashContext;
 }
 
 export interface DailySummary {

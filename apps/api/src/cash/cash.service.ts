@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import {
   db,
   schema,
+  type CashContext,
   type CashEntryReferenceType,
   type CashEntryType,
   type CashSession,
@@ -35,8 +36,17 @@ import {
 const OPEN_SESSION_STATUS = "open";
 const CLOSED_SESSION_STATUS = "closed";
 
+const PROJECT_REFERENCE_TYPES: readonly CashEntryReferenceType[] = ["project_payment", "project_expense"];
+
 function todayISODate(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+// Cristian requires project money to never mix with SIGAS's main cash register:
+// the context is derived from reference_type here, in one place, so every entry
+// creation path (manual, sales, purchases, projects) stays correctly separated.
+function resolveCashContext(referenceType?: CashEntryReferenceType): CashContext {
+  return referenceType && PROJECT_REFERENCE_TYPES.includes(referenceType) ? "projects" : "sigas";
 }
 
 function computePayableStatus(payable: {
@@ -222,6 +232,10 @@ export class CashService {
 
     if (filters.dateTo) {
       conditions.push(lte(schema.cashEntries.createdAt, filters.dateTo));
+    }
+
+    if (filters.cashContext) {
+      conditions.push(eq(schema.cashEntries.cashContext, filters.cashContext));
     }
 
     const entries = await db
@@ -421,6 +435,7 @@ export class CashService {
         amount: input.amount.toString(),
         referenceId: input.referenceId,
         referenceType: input.referenceType,
+        cashContext: resolveCashContext(input.referenceType),
         createdBy: input.createdBy,
       })
       .returning();

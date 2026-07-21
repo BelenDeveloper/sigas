@@ -1,0 +1,1 @@
+ALTER TABLE "cash_entries" ADD COLUMN "cash_context" text DEFAULT 'sigas' NOT NULL;

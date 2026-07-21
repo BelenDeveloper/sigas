@@ -26,6 +26,14 @@ export const CASH_ENTRY_CATEGORY_LABELS: Record<CashEntryCategory, string> = {
   other_expense: "Otro gasto",
 };
 
+export const CASH_CONTEXTS = ["sigas", "projects"] as const;
+export type CashContext = (typeof CASH_CONTEXTS)[number];
+
+export const CASH_CONTEXT_LABELS: Record<CashContext, string> = {
+  sigas: "Operaciones SIGAS",
+  projects: "Proyectos",
+};
+
 export const CREDITOR_TYPES = ["supplier", "investor", "company_loan", "other"] as const;
 export type CreditorType = (typeof CREDITOR_TYPES)[number];
 

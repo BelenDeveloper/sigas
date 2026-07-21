@@ -6,9 +6,11 @@ import { useAtomValue } from "jotai";
 import { useCash } from "@/hooks/use-cash";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { cashContextAtom } from "@/lib/atoms/cash-context.atom";
 import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { AccountsPayableTab } from "./AccountsPayableTab";
+import { CashContextSelector } from "./CashContextSelector";
 import { CashTab } from "./CashTab";
 
 const CASH_MODULE = "cash";
@@ -21,7 +23,8 @@ export function CashPage() {
   const canEditCash = hasModulePermission(authUser, CASH_MODULE, "canEdit");
   const isAdmin = authUser?.role === "admin";
 
-  const cash = useCash();
+  const cashContext = useAtomValue(cashContextAtom);
+  const cash = useCash(cashContext);
   const { suppliers } = useSuppliers();
 
   if (!canViewCash) {
@@ -29,51 +32,56 @@ export function CashPage() {
   }
 
   return (
-    <Tabs defaultValue="cash">
-      <TabsList>
-        <TabsTrigger value="cash">Caja</TabsTrigger>
-        <TabsTrigger value="payable">Cuentas por pagar</TabsTrigger>
-      </TabsList>
+    <div className="flex flex-col gap-6">
+      <CashContextSelector />
 
-      <TabsContent value="cash" className="flex flex-col gap-6">
-        <CashTab
-          session={cash.session}
-          onOpenSession={cash.openSession}
-          onCloseSession={cash.closeSession}
-          isOpeningSession={cash.isOpeningSession}
-          isClosingSession={cash.isClosingSession}
-          entries={cash.entries}
-          isLoading={cash.isLoading}
-          destinationBalances={cash.destinationBalances}
-          totalCashBalanceBOB={cash.totalCashBalanceBOB}
-          entryFilters={cash.entryFilters}
-          onEntryFiltersChange={cash.setEntryFilters}
-          onAddEntry={cash.addCashEntry}
-          isAddingEntry={cash.isAddingEntry}
-          onCancelEntry={cash.cancelEntry}
-          cancelingEntryId={cash.cancelingEntryId}
-          onAddPartnerDistribution={cash.addPartnerDistribution}
-          isAddingDistribution={cash.isAddingDistribution}
-          canCreate={canCreateCash}
-          canCancel={isAdmin}
-        />
-      </TabsContent>
+      <Tabs defaultValue="cash">
+        <TabsList>
+          <TabsTrigger value="cash">Caja</TabsTrigger>
+          <TabsTrigger value="payable">Cuentas por pagar</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="payable" className="flex flex-col gap-6">
-        <AccountsPayableTab
-          payables={cash.payables}
-          isLoading={cash.isLoadingPayables}
-          filters={cash.payableFilters}
-          onFiltersChange={cash.setPayableFilters}
-          suppliers={suppliers}
-          onCreatePayable={cash.createPayable}
-          isCreatingPayable={cash.isCreatingPayable}
-          onAddPayment={cash.addPayablePayment}
-          isAddingPayment={cash.isAddingPayablePayment}
-          canCreate={canCreateCash}
-          canEdit={canEditCash}
-        />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="cash" className="flex flex-col gap-6">
+          <CashTab
+            cashContext={cashContext}
+            session={cash.session}
+            onOpenSession={cash.openSession}
+            onCloseSession={cash.closeSession}
+            isOpeningSession={cash.isOpeningSession}
+            isClosingSession={cash.isClosingSession}
+            entries={cash.entries}
+            isLoading={cash.isLoading}
+            destinationBalances={cash.destinationBalances}
+            totalCashBalanceBOB={cash.totalCashBalanceBOB}
+            entryFilters={cash.entryFilters}
+            onEntryFiltersChange={cash.setEntryFilters}
+            onAddEntry={cash.addCashEntry}
+            isAddingEntry={cash.isAddingEntry}
+            onCancelEntry={cash.cancelEntry}
+            cancelingEntryId={cash.cancelingEntryId}
+            onAddPartnerDistribution={cash.addPartnerDistribution}
+            isAddingDistribution={cash.isAddingDistribution}
+            canCreate={canCreateCash}
+            canCancel={isAdmin}
+          />
+        </TabsContent>
+
+        <TabsContent value="payable" className="flex flex-col gap-6">
+          <AccountsPayableTab
+            payables={cash.payables}
+            isLoading={cash.isLoadingPayables}
+            filters={cash.payableFilters}
+            onFiltersChange={cash.setPayableFilters}
+            suppliers={suppliers}
+            onCreatePayable={cash.createPayable}
+            isCreatingPayable={cash.isCreatingPayable}
+            onAddPayment={cash.addPayablePayment}
+            isAddingPayment={cash.isAddingPayablePayment}
+            canCreate={canCreateCash}
+            canEdit={canEditCash}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

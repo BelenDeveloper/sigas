@@ -20,6 +20,9 @@ export const CASH_ENTRY_REFERENCE_TYPES = [
 ] as const;
 export type CashEntryReferenceType = (typeof CASH_ENTRY_REFERENCE_TYPES)[number];
 
+export const CASH_CONTEXTS = ["sigas", "projects"] as const;
+export type CashContext = (typeof CASH_CONTEXTS)[number];
+
 export const CASH_INCOME_CATEGORIES = ["sale", "collection", "other_income"] as const;
 export type CashIncomeCategory = (typeof CASH_INCOME_CATEGORIES)[number];
 
@@ -67,6 +70,7 @@ export const cashEntries = pgTable(
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     referenceId: uuid("reference_id"),
     referenceType: text("reference_type", { enum: CASH_ENTRY_REFERENCE_TYPES }),
+    cashContext: text("cash_context", { enum: CASH_CONTEXTS }).notNull().default("sigas"),
     cancelled: boolean("cancelled").notNull().default(false),
     createdBy: uuid("created_by")
       .notNull()
