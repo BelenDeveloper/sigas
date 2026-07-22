@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/ui/badge";
 import { Button } from "@repo/ui/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/ui/tabs";
 import { useAtomValue } from "jotai";
@@ -10,10 +11,12 @@ import { useState } from "react";
 import { useProject } from "@/hooks/use-projects";
 import { useUsers } from "@/hooks/use-users";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
+import { CANCELLED_STAGE_KEY } from "@/lib/constants/project-stages";
 import { hasModulePermission } from "@/lib/permission-helpers";
 import { PROJECT_CATEGORY_LABELS } from "@/lib/project-types";
 
 import { DetailPageSkeleton } from "../shared/DetailPageSkeleton";
+import { CancelProjectDialog } from "./CancelProjectDialog";
 import { ChangeStageDialog } from "./ChangeStageDialog";
 import { DocumentsTab } from "./DocumentsTab";
 import { FinanceTab } from "./FinanceTab";
@@ -26,6 +29,7 @@ const PROJECTS_ROUTE = "/projects";
 const RESTRICTED_ACCESS_MESSAGE = "No tienes permiso para ver esta sección.";
 const PROJECT_NOT_FOUND_MESSAGE = "No se encontró el proyecto solicitado.";
 const TERMINAL_STAGES = ["completed", "cancelled"];
+const CANCELLED_BADGE_LABEL = "CANCELADO";
 
 interface ProjectDetailPageProps {
   projectId: string;
@@ -64,6 +68,7 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
   const { users } = useUsers();
 
   const [isChangeStageOpen, setIsChangeStageOpen] = useState(false);
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
 
   if (!canViewProjects) {
     return <p className="text-muted-foreground">{RESTRICTED_ACCESS_MESSAGE}</p>;
@@ -90,7 +95,8 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
     );
   }
 
-  const canChangeStage = canEditProject && !TERMINAL_STAGES.includes(project.stage);
+  const isProjectCancelled = project.stage === CANCELLED_STAGE_KEY;
+  const canManageStage = canEditProject && !TERMINAL_STAGES.includes(project.stage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -115,12 +121,28 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
       <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-foreground">Pipeline del proyecto</span>
-          {canChangeStage ? (
-            <Button variant="outline" size="sm" onClick={() => setIsChangeStageOpen(true)}>
-              Cambiar etapa
-            </Button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {canManageStage ? (
+              <Button variant="outline" size="sm" onClick={() => setIsChangeStageOpen(true)}>
+                Cambiar etapa
+              </Button>
+            ) : null}
+            {isProjectCancelled ? (
+              <Badge className="bg-red-100 text-red-800">{CANCELLED_BADGE_LABEL}</Badge>
+            ) : canManageStage ? (
+              <Button variant="destructive" size="sm" onClick={() => setIsCancelOpen(true)}>
+                Cancelar proyecto
+              </Button>
+            ) : null}
+          </div>
         </div>
+
+        {isProjectCancelled && project.cancellationReason ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            Motivo de cancelación: {project.cancellationReason}
+          </p>
+        ) : null}
+
         <ProjectStagePipeline stage={project.stage} />
       </div>
 
@@ -191,6 +213,14 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
         onOpenChange={setIsChangeStageOpen}
         isChangingStage={isChangingStage}
         onConfirm={changeStage}
+      />
+
+      <CancelProjectDialog
+        project={project}
+        open={isCancelOpen}
+        onOpenChange={setIsCancelOpen}
+        isCancelling={isChangingStage}
+        onConfirm={(cancellationReason) => changeStage(CANCELLED_STAGE_KEY, cancellationReason)}
       />
     </div>
   );

@@ -11,13 +11,6 @@ import {
   DialogTitle,
 } from "@repo/ui/components/ui/dialog";
 import { Label } from "@repo/ui/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui/components/ui/select";
 import { Textarea } from "@repo/ui/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -25,33 +18,17 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import type { ProjectDetail } from "@/hooks/use-projects";
-import { CANCELLED_STAGE_KEY, getNextStage, type ProjectStageKey } from "@/lib/constants/project-stages";
+import { getNextStage, type ProjectStageKey } from "@/lib/constants/project-stages";
 
-const NOTE_REQUIRED_FOR_CANCEL_MESSAGE = "Ingresa un motivo para cancelar el proyecto.";
-const CANCEL_OPTION_LABEL = "Cancelar proyecto";
 const SAVE_ERROR_MESSAGE = "No se pudo cambiar la etapa. Intenta nuevamente.";
 
-type StageDecision = "advance" | "cancel";
-const DEFAULT_DECISION: StageDecision = "advance";
-
-const changeStageSchema = z
-  .object({
-    decision: z.enum(["advance", "cancel"]),
-    note: z.string(),
-  })
-  .superRefine((values, ctx) => {
-    if (values.decision === "cancel" && values.note.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: NOTE_REQUIRED_FOR_CANCEL_MESSAGE,
-        path: ["note"],
-      });
-    }
-  });
+const changeStageSchema = z.object({
+  note: z.string(),
+});
 
 type ChangeStageFormValues = z.infer<typeof changeStageSchema>;
 
-const EMPTY_VALUES: ChangeStageFormValues = { decision: DEFAULT_DECISION, note: "" };
+const EMPTY_VALUES: ChangeStageFormValues = { note: "" };
 
 interface ChangeStageDialogProps {
   project: ProjectDetail;
@@ -72,14 +49,7 @@ export function ChangeStageDialog({
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const {
-    handleSubmit,
-    register,
-    watch,
-    setValue,
-    reset,
-    formState: { errors },
-  } = useForm<ChangeStageFormValues>({
+  const { handleSubmit, register, reset } = useForm<ChangeStageFormValues>({
     resolver: zodResolver(changeStageSchema),
     defaultValues: EMPTY_VALUES,
   });
@@ -91,16 +61,15 @@ export function ChangeStageDialog({
     }
   }, [open, reset]);
 
-  const decision = watch("decision");
-
   const onSubmit = async (values: ChangeStageFormValues) => {
-    const resolvedStage: ProjectStageKey =
-      values.decision === "cancel" ? CANCELLED_STAGE_KEY : (nextStage?.key ?? CANCELLED_STAGE_KEY);
+    if (!nextStage) {
+      return;
+    }
 
     setErrorMessage(null);
 
     try {
-      await onConfirm(resolvedStage, values.note);
+      await onConfirm(nextStage.key, values.note);
       onOpenChange(false);
     } catch {
       setErrorMessage(SAVE_ERROR_MESSAGE);
@@ -116,31 +85,14 @@ export function ChangeStageDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="change-stage-decision">Nueva etapa</Label>
-            <Select
-              modal={false}
-              value={decision}
-              onValueChange={(value) => setValue("decision", (value ?? DEFAULT_DECISION) as StageDecision)}
-            >
-              <SelectTrigger id="change-stage-decision">
-                <SelectValue>
-                  {() => (decision === "cancel" ? CANCEL_OPTION_LABEL : (nextStage?.label ?? CANCEL_OPTION_LABEL))}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {nextStage ? <SelectItem value="advance">{nextStage.label}</SelectItem> : null}
-                <SelectItem value="cancel">{CANCEL_OPTION_LABEL}</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-foreground">Nueva etapa</span>
+            <span className="text-sm text-muted-foreground">{nextStage?.label}</span>
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="change-stage-note">
-              Nota {decision === "cancel" ? "(obligatoria)" : "(opcional)"}
-            </Label>
+            <Label htmlFor="change-stage-note">Nota (opcional)</Label>
             <Textarea id="change-stage-note" rows={3} {...register("note")} />
-            {errors.note ? <p className="text-sm text-destructive">{errors.note.message}</p> : null}
           </div>
 
           {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
@@ -148,7 +100,7 @@ export function ChangeStageDialog({
           <DialogFooter>
             <Button
               type="submit"
-              disabled={isChangingStage}
+              disabled={isChangingStage || !nextStage}
               className="bg-brand text-brand-foreground hover:bg-brand/90"
             >
               {isChangingStage ? <Loader2 className="size-4 animate-spin" /> : "Confirmar cambio"}

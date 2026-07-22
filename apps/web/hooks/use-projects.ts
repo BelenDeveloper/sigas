@@ -139,6 +139,7 @@ export interface ProjectDetail {
   isPrivate: boolean;
   stage: ProjectStageKey;
   description: string;
+  cancellationReason: string | null;
   totalValueBOB: number;
   firstPaymentAmountBOB: number;
   secondPaymentAmountBOB: number;
@@ -338,6 +339,7 @@ export function useProject(projectId: string): UseProjectResult {
       isPrivate: rawProject.isPrivate,
       stage: rawProject.stage,
       description: rawProject.description ?? "",
+      cancellationReason: rawProject.cancellationReason,
       totalValueBOB: rawProject.totalValue ? Number(rawProject.totalValue) : 0,
       firstPaymentAmountBOB: rawProject.firstPaymentAmount ? Number(rawProject.firstPaymentAmount) : 0,
       secondPaymentAmountBOB: rawProject.secondPaymentAmount ? Number(rawProject.secondPaymentAmount) : 0,
