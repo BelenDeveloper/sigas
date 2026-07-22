@@ -70,6 +70,7 @@ export const products = pgTable(
     location: text("location"),
     netWeight: numeric("net_weight", { precision: 10, scale: 3 }),
     grossWeight: numeric("gross_weight", { precision: 10, scale: 3 }),
+    imageUrl: text("image_url"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

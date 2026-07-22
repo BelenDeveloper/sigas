@@ -174,6 +174,7 @@ export function useInventory(): UseInventoryResult {
     location: string | null;
     netWeight: string | null;
     grossWeight: string | null;
+    imageUrl: string | null;
     isActive: boolean;
   }): Product => ({
     id: product.id,
@@ -191,6 +192,7 @@ export function useInventory(): UseInventoryResult {
     location: product.location ?? "",
     netWeight: product.netWeight !== null ? Number(product.netWeight) : null,
     grossWeight: product.grossWeight !== null ? Number(product.grossWeight) : null,
+    imageUrl: product.imageUrl,
     isActive: product.isActive,
   });
 

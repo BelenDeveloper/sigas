@@ -37,6 +37,7 @@ export interface Product {
   location: string;
   netWeight: number | null;
   grossWeight: number | null;
+  imageUrl: string | null;
   isActive: boolean;
 }
 

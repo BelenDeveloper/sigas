@@ -34,6 +34,8 @@ import {
   type ProductUnit,
 } from "@/lib/inventory-types";
 
+import { ProductImageUpload } from "./ProductImageUpload";
+
 const REQUIRED_MESSAGE = "Este campo es obligatorio.";
 const NON_NEGATIVE_MESSAGE = "Debe ser un número positivo.";
 const MAX_STOCK_MESSAGE = "El stock máximo debe ser mayor o igual al mínimo.";
@@ -172,6 +174,12 @@ export function ProductFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <ProductImageUpload
+            key={open ? (product?.id ?? "new") : "closed"}
+            productName={watch("name")}
+            currentImageUrl={product?.imageUrl}
+          />
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {isEditMode && product ? (
               <div className="flex flex-col gap-2">

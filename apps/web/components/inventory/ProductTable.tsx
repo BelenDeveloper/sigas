@@ -19,12 +19,13 @@ import {
 } from "@/lib/inventory-types";
 
 import { LowStockBadge } from "./LowStockBadge";
+import { ProductImage } from "./ProductImage";
 import { TableSkeleton } from "../shared/TableSkeleton";
 
 const ACTIVE_LABEL = "Activo";
 const INACTIVE_LABEL = "Inactivo";
 const NO_PRODUCTS_MESSAGE = "No se encontraron productos con estos filtros.";
-const COLUMN_COUNT = 9;
+const COLUMN_COUNT = 10;
 
 interface ProductTableProps {
   products: Product[];
@@ -53,6 +54,7 @@ export function ProductTable({
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10" />
           <TableHead>SKU</TableHead>
           <TableHead>Nombre</TableHead>
           <TableHead>Categoría</TableHead>
@@ -79,6 +81,13 @@ export function ProductTable({
 
             return (
               <TableRow key={product.id}>
+                <TableCell>
+                  <ProductImage
+                    imageUrl={product.imageUrl ?? undefined}
+                    productName={product.name}
+                    size="sm"
+                  />
+                </TableCell>
                 <TableCell className="font-mono text-xs">{product.sku}</TableCell>
                 <TableCell className="font-medium text-foreground">{product.name}</TableCell>
                 <TableCell>
