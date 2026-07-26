@@ -65,14 +65,14 @@ export function CategoriesManager({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Input
           placeholder={NEW_CATEGORY_PLACEHOLDER}
-          className="max-w-xs"
+          className="sm:max-w-xs"
           value={newCategoryName}
           onChange={(event) => setNewCategoryName(event.target.value)}
         />
-        <Button variant="outline" onClick={handleCreateCategory}>
+        <Button variant="outline" onClick={handleCreateCategory} className="w-fit">
           <Plus className="size-4" />
           Agregar categoría
         </Button>
@@ -81,7 +81,7 @@ export function CategoriesManager({
       <div className="flex flex-col gap-4">
         {categories.map((category) => (
           <Card key={category.id}>
-            <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <CardTitle>{category.name}</CardTitle>
                 <Badge
@@ -91,7 +91,7 @@ export function CategoriesManager({
                   {category.isActive ? ACTIVE_LABEL : INACTIVE_LABEL}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Switch
                   checked={category.isActive}
                   onCheckedChange={() => onToggleCategoryActive(category.id)}
@@ -124,19 +124,21 @@ export function CategoriesManager({
               )}
 
               {addingSubcategoryForId === category.id ? (
-                <div className="flex gap-2 pl-4">
+                <div className="flex flex-col gap-2 pl-4 sm:flex-row">
                   <Input
                     placeholder={NEW_SUBCATEGORY_PLACEHOLDER}
-                    className="max-w-xs"
+                    className="sm:max-w-xs"
                     value={newSubcategoryName}
                     onChange={(event) => setNewSubcategoryName(event.target.value)}
                   />
-                  <Button size="sm" onClick={() => handleConfirmAddSubcategory(category.id)}>
-                    Guardar
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setAddingSubcategoryForId(null)}>
-                    Cancelar
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleConfirmAddSubcategory(category.id)}>
+                      Guardar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setAddingSubcategoryForId(null)}>
+                      Cancelar
+                    </Button>
+                  </div>
                 </div>
               ) : null}
             </CardContent>

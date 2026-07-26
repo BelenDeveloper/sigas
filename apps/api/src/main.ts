@@ -9,11 +9,18 @@ import { TrpcModule } from "./trpc/trpc.module.js";
 const DEFAULT_PORT = 4000;
 const DEFAULT_CORS_ORIGIN = "http://localhost:3000";
 
+function parseCorsOrigins(rawOrigins: string): string[] {
+  return rawOrigins
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? DEFAULT_CORS_ORIGIN,
+    origin: parseCorsOrigins(process.env.CORS_ORIGIN ?? DEFAULT_CORS_ORIGIN),
     credentials: true,
   });
 

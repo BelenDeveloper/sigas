@@ -142,23 +142,23 @@ export function SaleDetailPage({ saleId }: SaleDetailPageProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="outline" nativeButton={false} render={<Link href={SALES_ROUTE} />} className="w-fit">
           <ArrowLeft className="size-4" />
           Volver a ventas
         </Button>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <PrintReceiptButton saleId={sale.id} />
           <SalePdfButton saleId={sale.id} />
         </div>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <CardHeader className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
           <div>
             <CardTitle className="text-xl">{sale.code}</CardTitle>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SaleStatusBadge status={sale.status} />
             {canEditSaleDetails ? (
               <Button

@@ -119,9 +119,9 @@ export function ProjectDetailPage({ projectId }: ProjectDetailPageProps) {
       </div>
 
       <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm font-medium text-foreground">Pipeline del proyecto</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canManageStage ? (
               <Button variant="outline" size="sm" onClick={() => setIsChangeStageOpen(true)}>
                 Cambiar etapa
