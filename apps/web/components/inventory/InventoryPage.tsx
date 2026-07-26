@@ -8,7 +8,7 @@ import { useState } from "react";
 
 import { useInventory } from "@/hooks/use-inventory";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
-import type { Product } from "@/lib/inventory-types";
+import type { Product, StockMovement } from "@/lib/inventory-types";
 import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { AdjustStockDialog } from "./AdjustStockDialog";
@@ -38,11 +38,13 @@ export function InventoryPage() {
     createProduct,
     updateProduct,
     adjustStock,
+    markMovementReceived,
     isLoading,
     isMovementsLoading,
     isCreating,
     isUpdating,
     isAdjustingStock,
+    receivingMovementId,
   } = useInventory();
 
   const [productFormOpen, setProductFormOpen] = useState(false);
@@ -67,6 +69,10 @@ export function InventoryPage() {
   const handleAdjustStock = (product: Product) => {
     setAdjustingProduct(product);
     setAdjustStockOpen(true);
+  };
+
+  const handleMarkReceived = (movement: StockMovement) => {
+    void markMovementReceived(movement.id);
   };
 
   return (
@@ -111,7 +117,12 @@ export function InventoryPage() {
             filters={stockMovementFilters}
             onFiltersChange={setStockMovementFilters}
           />
-          <StockMovementTable movements={stockMovements} isLoading={isMovementsLoading} />
+          <StockMovementTable
+            movements={stockMovements}
+            isLoading={isMovementsLoading}
+            receivingMovementId={receivingMovementId}
+            onMarkReceived={handleMarkReceived}
+          />
         </TabsContent>
       </Tabs>
 

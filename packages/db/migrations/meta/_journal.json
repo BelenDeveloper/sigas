@@ -141,6 +141,13 @@
       "when": 1785081910514,
       "tag": "0019_add_purchase_cost_items",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785096428723,
+      "tag": "0020_add_stock_movement_expected_arrival",
+      "breakpoints": true
     }
   ]
 }

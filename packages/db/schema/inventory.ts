@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   index,
   numeric,
   pgSequence,
@@ -25,6 +26,9 @@ export type StockMovementType = (typeof STOCK_MOVEMENT_TYPES)[number];
 
 export const STOCK_MOVEMENT_REFERENCE_TYPES = ["sale", "purchase", "adjustment", "migration"] as const;
 export type StockMovementReferenceType = (typeof STOCK_MOVEMENT_REFERENCE_TYPES)[number];
+
+export const STOCK_MOVEMENT_STATUSES = ["completed", "pending"] as const;
+export type StockMovementStatus = (typeof STOCK_MOVEMENT_STATUSES)[number];
 
 export const productCategories = pgTable("product_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -96,6 +100,9 @@ export const stockMovements = pgTable(
     reason: text("reason"),
     referenceId: uuid("reference_id"),
     referenceType: text("reference_type", { enum: STOCK_MOVEMENT_REFERENCE_TYPES }),
+    expectedArrivalDate: date("expected_arrival_date"),
+    status: text("status", { enum: STOCK_MOVEMENT_STATUSES }).notNull().default("completed"),
+    receivedAt: timestamp("received_at", { withTimezone: true }),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),

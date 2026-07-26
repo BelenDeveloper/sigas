@@ -43,6 +43,8 @@ export interface Product {
 
 export type StockMovementType = "IN" | "OUT" | "ADJUSTMENT";
 
+export type StockMovementStatus = "completed" | "pending";
+
 export interface StockMovement {
   id: string;
   productId: string;
@@ -55,4 +57,7 @@ export interface StockMovement {
   createdBy: string;
   createdByName: string;
   createdAt: string;
+  expectedArrivalDate: string | null;
+  status: StockMovementStatus;
+  receivedAt: string | null;
 }

@@ -49,11 +49,13 @@ export type {
   ProductUnit,
   StockMovement,
   StockMovementReferenceType,
+  StockMovementStatus,
   StockMovementType,
 } from "./schema/inventory.js";
 export {
   PRODUCT_UNITS,
   STOCK_MOVEMENT_REFERENCE_TYPES,
+  STOCK_MOVEMENT_STATUSES,
   STOCK_MOVEMENT_TYPES,
 } from "./schema/inventory.js";
 export type {

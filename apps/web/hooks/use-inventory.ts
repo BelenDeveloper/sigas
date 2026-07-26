@@ -75,12 +75,19 @@ interface UseInventoryResult {
   setStockMovementFilters: (filters: Partial<StockMovementFilterState>) => void;
   createProduct: (input: ProductInput) => Promise<void>;
   updateProduct: (productId: string, input: ProductInput) => Promise<void>;
-  adjustStock: (productId: string, quantityDelta: number, reason: string) => Promise<void>;
+  adjustStock: (
+    productId: string,
+    quantityDelta: number,
+    reason: string,
+    expectedArrivalDate?: string,
+  ) => Promise<void>;
+  markMovementReceived: (movementId: string) => Promise<void>;
   isLoading: boolean;
   isMovementsLoading: boolean;
   isCreating: boolean;
   isUpdating: boolean;
   isAdjustingStock: boolean;
+  receivingMovementId: string | null;
 }
 
 function toProductInput(input: ProductInput) {
@@ -157,6 +164,9 @@ export function useInventory(): UseInventoryResult {
   const adjustStockMutation = trpc.inventory.adjustStock.useMutation({
     onSuccess: invalidateAfterStockChange,
   });
+  const markMovementReceivedMutation = trpc.inventory.markMovementReceived.useMutation({
+    onSuccess: invalidateAfterStockChange,
+  });
 
   const toProduct = (product: {
     id: string;
@@ -219,6 +229,9 @@ export function useInventory(): UseInventoryResult {
         createdBy: movement.createdBy,
         createdByName: userNameById.get(movement.createdBy) ?? UNKNOWN_USER_LABEL,
         createdAt: movement.createdAt,
+        expectedArrivalDate: movement.expectedArrivalDate,
+        status: movement.status,
+        receivedAt: movement.receivedAt,
       }))
       .filter((movement) =>
         normalizedSearchTerm ? movement.productName.toLowerCase().includes(normalizedSearchTerm) : true,
@@ -239,8 +252,22 @@ export function useInventory(): UseInventoryResult {
     });
   };
 
-  const adjustStock = async (productId: string, quantityDelta: number, reason: string) => {
-    await adjustStockMutation.mutateAsync({ productId, quantity: quantityDelta, reason });
+  const adjustStock = async (
+    productId: string,
+    quantityDelta: number,
+    reason: string,
+    expectedArrivalDate?: string,
+  ) => {
+    await adjustStockMutation.mutateAsync({
+      productId,
+      quantity: quantityDelta,
+      reason,
+      expectedArrivalDate: expectedArrivalDate || undefined,
+    });
+  };
+
+  const markMovementReceived = async (movementId: string) => {
+    await markMovementReceivedMutation.mutateAsync({ movementId });
   };
 
   return {
@@ -255,10 +282,14 @@ export function useInventory(): UseInventoryResult {
     createProduct,
     updateProduct,
     adjustStock,
+    markMovementReceived,
     isLoading: rawAllProducts === undefined,
     isMovementsLoading: rawMovements === undefined,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isAdjustingStock: adjustStockMutation.isPending,
+    receivingMovementId: markMovementReceivedMutation.isPending
+      ? (markMovementReceivedMutation.variables?.movementId ?? null)
+      : null,
   };
 }

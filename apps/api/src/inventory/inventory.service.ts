@@ -13,6 +13,8 @@ import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import {
   InsufficientStockError,
   ProductNotFoundError,
+  StockMovementNotFoundError,
+  StockMovementNotPendingError,
   type CreateProductInput,
   type MovementFilters,
   type ProductFilters,
@@ -22,6 +24,12 @@ import {
 
 const SKU_PREFIX = "PROD-";
 const SKU_PADDING_LENGTH = 3;
+
+function isFutureDate(date: Date): boolean {
+  const dateOnly = date.toISOString().slice(0, 10);
+  const todayOnly = new Date().toISOString().slice(0, 10);
+  return dateOnly > todayOnly;
+}
 
 @Injectable()
 export class InventoryService {
@@ -141,6 +149,7 @@ export class InventoryService {
     reason: string | undefined,
     userId: string,
     reference?: { id: string; type: StockMovementReferenceType },
+    expectedArrivalDate?: Date,
   ): Promise<Product> {
     return db.transaction(async (tx) => {
       const [product] = await tx
@@ -154,6 +163,26 @@ export class InventoryService {
       }
 
       const stockBefore = Number(product.currentStock);
+      const isPendingArrival = quantity > 0 && expectedArrivalDate !== undefined && isFutureDate(expectedArrivalDate);
+
+      if (isPendingArrival) {
+        await tx.insert(schema.stockMovements).values({
+          productId,
+          type: "IN",
+          quantity: quantity.toString(),
+          stockBefore: stockBefore.toString(),
+          newStock: (stockBefore + quantity).toString(),
+          reason,
+          referenceId: reference?.id,
+          referenceType: reference?.type,
+          expectedArrivalDate: expectedArrivalDate.toISOString().slice(0, 10),
+          status: "pending",
+          createdBy: userId,
+        });
+
+        return product;
+      }
+
       const newStock = stockBefore + quantity;
 
       if (newStock < 0) {
@@ -179,10 +208,64 @@ export class InventoryService {
         reason,
         referenceId: reference?.id,
         referenceType: reference?.type,
+        expectedArrivalDate: expectedArrivalDate ? expectedArrivalDate.toISOString().slice(0, 10) : undefined,
         createdBy: userId,
       });
 
       return updatedProduct;
+    });
+  }
+
+  async markMovementReceived(movementId: string): Promise<StockMovement> {
+    return db.transaction(async (tx) => {
+      const [movement] = await tx
+        .select()
+        .from(schema.stockMovements)
+        .where(eq(schema.stockMovements.id, movementId))
+        .limit(1);
+
+      if (!movement) {
+        throw new StockMovementNotFoundError(movementId);
+      }
+
+      if (movement.status !== "pending") {
+        throw new StockMovementNotPendingError(movementId);
+      }
+
+      const [product] = await tx
+        .select()
+        .from(schema.products)
+        .where(eq(schema.products.id, movement.productId))
+        .limit(1);
+
+      if (!product) {
+        throw new ProductNotFoundError(movement.productId);
+      }
+
+      const stockBefore = Number(product.currentStock);
+      const newStock = stockBefore + Number(movement.quantity);
+
+      await tx
+        .update(schema.products)
+        .set({ currentStock: newStock.toString(), updatedAt: new Date() })
+        .where(eq(schema.products.id, product.id));
+
+      const [updatedMovement] = await tx
+        .update(schema.stockMovements)
+        .set({
+          status: "completed",
+          stockBefore: stockBefore.toString(),
+          newStock: newStock.toString(),
+          receivedAt: new Date(),
+        })
+        .where(eq(schema.stockMovements.id, movementId))
+        .returning();
+
+      if (!updatedMovement) {
+        throw new Error(`Failed to mark movement as received: ${movementId}`);
+      }
+
+      return updatedMovement;
     });
   }
 

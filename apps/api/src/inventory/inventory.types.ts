@@ -66,3 +66,17 @@ export class InsufficientStockError extends Error {
     this.name = "InsufficientStockError";
   }
 }
+
+export class StockMovementNotFoundError extends Error {
+  constructor(movementId: string) {
+    super(`Stock movement not found: ${movementId}`);
+    this.name = "StockMovementNotFoundError";
+  }
+}
+
+export class StockMovementNotPendingError extends Error {
+  constructor(movementId: string) {
+    super(`Stock movement is not pending: ${movementId}`);
+    this.name = "StockMovementNotPendingError";
+  }
+}

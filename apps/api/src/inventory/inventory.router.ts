@@ -5,7 +5,12 @@ import { z } from "zod";
 import { requirePermission } from "../trpc/guards.js";
 import { protectedProcedure, router } from "../trpc/trpc.service.js";
 import { InventoryService } from "./inventory.service.js";
-import { InsufficientStockError, ProductNotFoundError } from "./inventory.types.js";
+import {
+  InsufficientStockError,
+  ProductNotFoundError,
+  StockMovementNotFoundError,
+  StockMovementNotPendingError,
+} from "./inventory.types.js";
 
 const INVENTORY_MODULE = "inventory";
 
@@ -44,7 +49,10 @@ const adjustStockInputSchema = z.object({
   productId: z.string().uuid(),
   quantity: z.number().refine((value) => value !== 0, "Quantity must not be zero"),
   reason: z.string().optional(),
+  expectedArrivalDate: z.coerce.date().optional(),
 });
+
+const markMovementReceivedInputSchema = z.object({ movementId: z.string().uuid() });
 
 const movementFiltersInputSchema = z.object({
   productId: z.string().uuid().optional(),
@@ -63,6 +71,14 @@ function toTrpcError(error: unknown): TRPCError {
   }
 
   if (error instanceof InsufficientStockError) {
+    return new TRPCError({ code: "BAD_REQUEST", message: error.message });
+  }
+
+  if (error instanceof StockMovementNotFoundError) {
+    return new TRPCError({ code: "NOT_FOUND", message: error.message });
+  }
+
+  if (error instanceof StockMovementNotPendingError) {
     return new TRPCError({ code: "BAD_REQUEST", message: error.message });
   }
 
@@ -109,11 +125,30 @@ export const inventoryRouter = router({
     requirePermission(ctx, INVENTORY_MODULE, "edit");
 
     try {
-      return await inventoryService.adjustStock(input.productId, input.quantity, input.reason, ctx.user.id);
+      return await inventoryService.adjustStock(
+        input.productId,
+        input.quantity,
+        input.reason,
+        ctx.user.id,
+        undefined,
+        input.expectedArrivalDate,
+      );
     } catch (error) {
       throw toTrpcError(error);
     }
   }),
+
+  markMovementReceived: protectedProcedure
+    .input(markMovementReceivedInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      requirePermission(ctx, INVENTORY_MODULE, "edit");
+
+      try {
+        return await inventoryService.markMovementReceived(input.movementId);
+      } catch (error) {
+        throw toTrpcError(error);
+      }
+    }),
 
   listMovements: protectedProcedure.input(movementFiltersInputSchema).query(({ ctx, input }) => {
     requirePermission(ctx, INVENTORY_MODULE, "view");

@@ -22,23 +22,30 @@ import type { Product } from "@/lib/inventory-types";
 const QUANTITY_ZERO_MESSAGE = "La cantidad no puede ser cero.";
 const REASON_REQUIRED_MESSAGE = "El motivo es obligatorio.";
 const SAVE_ERROR_MESSAGE = "No se pudo ajustar el stock. Intenta nuevamente.";
+const EXPECTED_ARRIVAL_LABEL = "Fecha de llegada esperada (si aún no llegó)";
 
 const adjustStockSchema = z.object({
   quantity: z.coerce.number().refine((value) => value !== 0, QUANTITY_ZERO_MESSAGE),
   reason: z.string().min(1, REASON_REQUIRED_MESSAGE),
+  expectedArrivalDate: z.string(),
 });
 
 type AdjustStockFormInput = z.input<typeof adjustStockSchema>;
 type AdjustStockFormValues = z.infer<typeof adjustStockSchema>;
 
-const DEFAULT_VALUES: AdjustStockFormInput = { quantity: 0, reason: "" };
+const DEFAULT_VALUES: AdjustStockFormInput = { quantity: 0, reason: "", expectedArrivalDate: "" };
 
 interface AdjustStockDialogProps {
   product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isSaving: boolean;
-  onConfirm: (productId: string, quantityDelta: number, reason: string) => Promise<void>;
+  onConfirm: (
+    productId: string,
+    quantityDelta: number,
+    reason: string,
+    expectedArrivalDate?: string,
+  ) => Promise<void>;
 }
 
 export function AdjustStockDialog({
@@ -76,11 +83,18 @@ export function AdjustStockDialog({
 
   const newStockLevel = product.currentStock + (Number(quantity) || 0);
 
+  const isIncoming = Number(quantity) > 0;
+
   const onSubmit = async (values: AdjustStockFormValues) => {
     setErrorMessage(null);
 
     try {
-      await onConfirm(product.id, values.quantity, values.reason);
+      await onConfirm(
+        product.id,
+        values.quantity,
+        values.reason,
+        isIncoming ? values.expectedArrivalDate : undefined,
+      );
       onOpenChange(false);
     } catch {
       setErrorMessage(SAVE_ERROR_MESSAGE);
@@ -111,6 +125,17 @@ export function AdjustStockDialog({
               <p className="text-sm text-destructive">{errors.reason.message}</p>
             ) : null}
           </div>
+
+          {isIncoming ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="adjust-expected-arrival">{EXPECTED_ARRIVAL_LABEL}</Label>
+              <Input
+                id="adjust-expected-arrival"
+                type="date"
+                {...register("expectedArrivalDate")}
+              />
+            </div>
+          ) : null}
 
           <p className="text-sm text-muted-foreground">
             Stock actual: {product.currentStock} → Nuevo stock:{" "}
