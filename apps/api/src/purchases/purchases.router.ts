@@ -27,6 +27,11 @@ const createPurchaseItemInputSchema = z.object({
   notes: z.string().optional(),
 });
 
+const createPurchaseCostItemInputSchema = z.object({
+  label: z.string().min(1),
+  amount: z.number().nonnegative(),
+});
+
 const createPurchaseInputSchema = z.object({
   supplierId: z.string().uuid().optional(),
   companyId: z.string().uuid().optional(),
@@ -34,6 +39,7 @@ const createPurchaseInputSchema = z.object({
   purchaseDate: z.string().optional(),
   notes: z.string().optional(),
   items: z.array(createPurchaseItemInputSchema).min(1),
+  costItems: z.array(createPurchaseCostItemInputSchema).optional(),
 });
 
 const addPaymentInputSchema = z.object({

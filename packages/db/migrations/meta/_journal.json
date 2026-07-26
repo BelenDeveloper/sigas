@@ -127,6 +127,20 @@
       "when": 1784597200000,
       "tag": "0017_backfill_checklist_sort_order",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784760419763,
+      "tag": "0018_add_product_image_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785081910514,
+      "tag": "0019_add_purchase_cost_items",
+      "breakpoints": true
     }
   ]
 }

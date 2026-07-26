@@ -1,6 +1,13 @@
-import type { PaymentMethod, Purchase, PurchaseItem, PurchasePayment, PurchaseStatus } from "@repo/db";
+import type {
+  PaymentMethod,
+  Purchase,
+  PurchaseCostItem,
+  PurchaseItem,
+  PurchasePayment,
+  PurchaseStatus,
+} from "@repo/db";
 
-export type { Purchase, PurchaseItem, PurchasePayment };
+export type { Purchase, PurchaseCostItem, PurchaseItem, PurchasePayment };
 
 export interface PurchaseListItem extends Purchase {
   supplierName: string | null;
@@ -17,6 +24,7 @@ export interface PurchaseItemWithProduct extends PurchaseItem {
 export interface PurchaseWithRelations extends Purchase {
   items: PurchaseItemWithProduct[];
   payments: PurchasePayment[];
+  costItems: PurchaseCostItem[];
   totalPaid: number;
   totalPending: number;
 }
@@ -41,6 +49,11 @@ export interface CreatePurchaseItemInput {
   notes?: string;
 }
 
+export interface CreatePurchaseCostItemInput {
+  label: string;
+  amount: number;
+}
+
 export interface CreatePurchaseInput {
   supplierId?: string;
   companyId?: string;
@@ -48,6 +61,7 @@ export interface CreatePurchaseInput {
   purchaseDate?: string;
   notes?: string;
   items: CreatePurchaseItemInput[];
+  costItems?: CreatePurchaseCostItemInput[];
 }
 
 export interface AddPurchasePaymentInput {

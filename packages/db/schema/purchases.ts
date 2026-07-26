@@ -1,4 +1,14 @@
-import { date, index, numeric, pgSequence, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  date,
+  index,
+  integer,
+  numeric,
+  pgSequence,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 import { companies } from "./companies.js";
@@ -87,3 +97,20 @@ export const purchasePayments = pgTable(
 
 export type PurchasePayment = typeof purchasePayments.$inferSelect;
 export type NewPurchasePayment = typeof purchasePayments.$inferInsert;
+
+export const purchaseCostItems = pgTable(
+  "purchase_cost_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    purchaseId: uuid("purchase_id")
+      .notNull()
+      .references(() => purchases.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [index("purchase_cost_items_purchase_id_idx").on(table.purchaseId)],
+);
+
+export type PurchaseCostItem = typeof purchaseCostItems.$inferSelect;
+export type NewPurchaseCostItem = typeof purchaseCostItems.$inferInsert;

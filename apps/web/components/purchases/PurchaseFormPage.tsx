@@ -18,11 +18,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useInventory } from "@/hooks/use-inventory";
-import { usePurchases, type PurchaseItemInput } from "@/hooks/use-purchases";
+import {
+  usePurchases,
+  type PurchaseCostItemInput,
+  type PurchaseItemInput,
+} from "@/hooks/use-purchases";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { authUserAtom } from "@/lib/atoms/auth.atom";
 import { hasModulePermission } from "@/lib/permission-helpers";
 
+import { PurchaseCostItemsEditor } from "./PurchaseCostItemsEditor";
+import { PurchaseCostSummary } from "./PurchaseCostSummary";
 import { PurchaseItemsEditor } from "./PurchaseItemsEditor";
 
 const PURCHASES_MODULE = "purchases";
@@ -50,6 +56,7 @@ export function PurchaseFormPage() {
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<PurchaseItemInput[]>([]);
+  const [costItems, setCostItems] = useState<PurchaseCostItemInput[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -59,6 +66,7 @@ export function PurchaseFormPage() {
 
   const selectedSupplier = suppliers.find((supplier) => supplier.id === supplierId);
   const hasValidItems = items.length > 0 && items.every((item) => item.productId && item.quantity > 0);
+  const productsSubtotalBOB = items.reduce((sum, item) => sum + item.quantity * item.unitCostBOB, 0);
 
   const handleSave = async () => {
     if (!selectedSupplier) {
@@ -81,6 +89,7 @@ export function PurchaseFormPage() {
         invoiceNumber,
         notes,
         items,
+        costItems: costItems.filter((costItem) => costItem.label.trim().length > 0),
       });
 
       router.push(`/purchases/${createdPurchase.id}`);
@@ -152,6 +161,21 @@ export function PurchaseFormPage() {
         </CardHeader>
         <CardContent>
           <PurchaseItemsEditor items={items} onItemsChange={setItems} products={products} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Costos adicionales</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PurchaseCostItemsEditor costItems={costItems} onCostItemsChange={setCostItems} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <PurchaseCostSummary productsSubtotalBOB={productsSubtotalBOB} costItems={costItems} />
         </CardContent>
       </Card>
 

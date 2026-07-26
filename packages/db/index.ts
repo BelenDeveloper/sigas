@@ -85,9 +85,11 @@ export {
 } from "./schema/projects.js";
 export type {
   NewPurchase,
+  NewPurchaseCostItem,
   NewPurchaseItem,
   NewPurchasePayment,
   Purchase,
+  PurchaseCostItem,
   PurchaseItem,
   PurchasePayment,
   PurchaseStatus,

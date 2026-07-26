@@ -31,6 +31,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-method"
 import { hasModulePermission } from "@/lib/permission-helpers";
 
 import { DetailPageSkeleton } from "../shared/DetailPageSkeleton";
+import { PurchaseCostSummary } from "./PurchaseCostSummary";
 import { PurchaseStatusBadge } from "./PurchaseStatusBadge";
 
 const PURCHASES_MODULE = "purchases";
@@ -95,6 +96,8 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
       </div>
     );
   }
+
+  const productsSubtotalBOB = purchase.items.reduce((sum, item) => sum + item.subtotalBOB, 0);
 
   const handleConfirmPayment = async () => {
     if (!newPayment.accountDestination.trim()) {
@@ -173,6 +176,12 @@ export function PurchaseDetailPage({ purchaseId }: PurchaseDetailPageProps) {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <PurchaseCostSummary productsSubtotalBOB={productsSubtotalBOB} costItems={purchase.costItems} />
         </CardContent>
       </Card>
 

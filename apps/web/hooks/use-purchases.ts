@@ -22,6 +22,11 @@ export interface PurchaseItemInput {
   unitCostBOB: number;
 }
 
+export interface PurchaseCostItemInput {
+  label: string;
+  amountBOB: number;
+}
+
 export interface PurchasePaymentInput {
   amountBOB: number;
   method: PaymentMethod;
@@ -34,6 +39,7 @@ export interface PurchaseInput {
   invoiceNumber: string;
   notes: string;
   items: PurchaseItemInput[];
+  costItems: PurchaseCostItemInput[];
 }
 
 export interface PurchaseListItem {
@@ -69,6 +75,12 @@ export interface PurchasePaymentDetail {
   notes: string;
 }
 
+export interface PurchaseCostItemDetail {
+  id: string;
+  label: string;
+  amountBOB: number;
+}
+
 export interface PurchaseDetail {
   id: string;
   code: string;
@@ -82,6 +94,7 @@ export interface PurchaseDetail {
   pendingBOB: number;
   items: PurchaseItemDetail[];
   payments: PurchasePaymentDetail[];
+  costItems: PurchaseCostItemDetail[];
 }
 
 const DEFAULT_FILTERS: PurchaseFilterState = {
@@ -159,6 +172,10 @@ export function usePurchases(): UsePurchasesResult {
         quantity: item.quantity,
         unitCost: item.unitCostBOB,
       })),
+      costItems: input.costItems.map((costItem) => ({
+        label: costItem.label,
+        amount: costItem.amountBOB,
+      })),
     });
   };
 
@@ -223,6 +240,11 @@ export function usePurchase(purchaseId: string): UsePurchaseResult {
         accountDestination: payment.accountDestination ?? "",
         paidAt: String(payment.paidAt),
         notes: payment.notes ?? "",
+      })),
+      costItems: rawPurchase.costItems.map((costItem) => ({
+        id: costItem.id,
+        label: costItem.label,
+        amountBOB: Number(costItem.amount),
       })),
     };
   }, [rawPurchase]);

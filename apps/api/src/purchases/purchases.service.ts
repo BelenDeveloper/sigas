@@ -92,12 +92,19 @@ export class PurchasesService {
       .where(eq(schema.purchasePayments.purchaseId, id))
       .orderBy(desc(schema.purchasePayments.paidAt));
 
+    const costItems = await db
+      .select()
+      .from(schema.purchaseCostItems)
+      .where(eq(schema.purchaseCostItems.purchaseId, id))
+      .orderBy(schema.purchaseCostItems.sortOrder);
+
     const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
     return {
       ...purchase,
       items,
       payments,
+      costItems,
       totalPaid,
       totalPending: Number(purchase.total) - totalPaid,
     };
@@ -113,7 +120,10 @@ export class PurchasesService {
       subtotal: item.quantity * item.unitCost,
     }));
 
-    const total = itemsWithSubtotal.reduce((sum, item) => sum + item.subtotal, 0);
+    const costItems = input.costItems ?? [];
+    const productsSubtotal = itemsWithSubtotal.reduce((sum, item) => sum + item.subtotal, 0);
+    const costItemsTotal = costItems.reduce((sum, costItem) => sum + costItem.amount, 0);
+    const total = productsSubtotal + costItemsTotal;
     const code = await this.generateNextCode();
 
     const purchase = await db.transaction(async (tx) => {
@@ -145,6 +155,17 @@ export class PurchasesService {
           notes: item.notes,
         })),
       );
+
+      if (costItems.length > 0) {
+        await tx.insert(schema.purchaseCostItems).values(
+          costItems.map((costItem, index) => ({
+            purchaseId: insertedPurchase.id,
+            label: costItem.label,
+            amount: costItem.amount.toString(),
+            sortOrder: index,
+          })),
+        );
+      }
 
       return insertedPurchase;
     });
